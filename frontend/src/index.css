@@ -1,0 +1,43 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-bg dark:bg-bg-dark text-text dark:text-text-dark font-body transition-colors duration-200;
+  }
+
+  /* Thin, unobtrusive scrollbars for horizontal-scroll card rows */
+  .scroll-row::-webkit-scrollbar {
+    height: 6px;
+  }
+  .scroll-row::-webkit-scrollbar-thumb {
+    @apply bg-brand/40 dark:bg-brand-dark/40 rounded-full;
+  }
+}
+
+@layer components {
+  /*
+    THE single rule for every Heading / Brand name / Title on the site:
+    same font (Rajdhani), same color per theme, everywhere. Never mix colors
+    within one heading (e.g. never "Adevos-X" one color and "Tech" another).
+    Always compose headings with this class instead of ad-hoc styles.
+  */
+  .heading {
+    @apply font-display font-semibold text-brand dark:text-brand-dark tracking-wide;
+  }
+
+  .card {
+    @apply bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded-2xl shadow-sm;
+  }
+
+  .btn {
+    @apply font-body text-sm font-medium px-4 py-2 rounded-full transition-colors duration-150;
+  }
+  .btn-primary {
+    @apply btn bg-brand dark:bg-brand-dark text-white dark:text-bg-dark hover:opacity-90;
+  }
+  .btn-outline {
+    @apply btn border border-brand dark:border-brand-dark text-brand dark:text-brand-dark hover:bg-brand/10 dark:hover:bg-brand-dark/10;
+  }
+}
