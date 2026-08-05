@@ -1,7 +1,7 @@
 {
   "name": "Adevos-X Tech Backend",
   "description": "Adevos-X Tech API — Express + MongoDB backend, deployed from the /backend subdirectory of this monorepo.",
-  "repository": "https://github.com/YOUR-USERNAME/adevos-x-tech",
+  "repository": "https://github.com/only1ahmed-developer/adevos-x-tech",
   "keywords": ["node", "express", "mongodb", "adevos-x-tech"],
   "stack": "heroku-22",
   "buildpacks": [
