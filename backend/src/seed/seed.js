@@ -113,7 +113,7 @@ async function seed() {
   await Bot.insertMany([
     {
       name: "Adevos Min-Bot", slug: "adevos-min-bot",
-      description: "A free, no-cost WhatsApp bot to get you started instantly.",
+      description: "A free, WhatsApp min-bot with few commands with rare performances.",
       author: "Adevos", imageUrl: IMG("minbot", 800, 450),
       isFree: true, freeWebsiteUrl: "https://minbot.adevosxtech.site",
       badge: "none", order: 1,
@@ -122,9 +122,9 @@ async function seed() {
       name: "Adevos-X Bot", slug: "adevos-x-bot",
       description: "Multi-Device Popular WhatsApp bot with rich features.",
       author: "Adevos", imageUrl: IMG("xbot", 800, 450),
-      githubRepoUrl: "https://github.com/adevos/adevos-x-bot",
-      pairSiteUrl: "https://pair.adevosxtech.com/x-bot",
-      badge: "popular", ratingAverage: 8.0, ratingCount: 214, order: 2,
+      githubRepoUrl: "https://github.com/adevos-x-tech/adevosxbot",
+      pairSiteUrl: "https://pair.adevosxtech.site",
+      badge: "popular", ratingAverage: 9.0, ratingCount: 214, order: 2,
     },
     {
       name: "Adevos Nova Bot", slug: "adevos-nova-bot",
@@ -180,9 +180,9 @@ async function seed() {
   await Support.deleteMany();
   await Support.create({
     description: "You need to get a quick response from Admins? Join our community and channels — our team and fellow builders are online around the clock.",
-    communityUrl: "https://t.me/adevosxtech_community",
-    whatsappUrl: "https://wa.me/255700000000",
-    telegramUrl: "https://t.me/adevosxtech",
+    communityUrl: "https://chat.whatsapp.com/HXSngTMaoOD1Zodkttre70",
+    whatsappUrl: "https://whatsapp.com/channel/0029Vb6wIVU9Bb5w69FQvt0W",
+    telegramUrl: "https://t.me/adevosXch1",
   });
 
   /* ---------------- Testimonials ---------------- */
@@ -197,12 +197,12 @@ async function seed() {
   await StayConnectedLink.deleteMany();
   await StayConnectedLink.insertMany([
     { platform: "twitter", icon: "twitter", url: "https://twitter.com/adevosxtech", order: 1 },
-    { platform: "whatsapp", icon: "whatsapp", url: "https://wa.me/255700000000", order: 2 },
-    { platform: "youtube", icon: "youtube", url: "https://youtube.com/@adevosxtech", order: 3 },
-    { platform: "facebook", icon: "facebook", url: "https://facebook.com/adevosxtech", order: 4 },
-    { platform: "instagram", icon: "instagram", url: "https://instagram.com/adevosxtech", order: 5 },
-    { platform: "telegram", icon: "telegram", url: "https://t.me/adevosxtech", order: 6 },
-    { platform: "tiktok", icon: "tiktok", url: "https://tiktok.com/@adevosxtech", order: 7 },
+    { platform: "whatsapp", icon: "whatsapp", url: "https://whatsapp.com/channel/0029Vb6wIVU9Bb5w69FQvt0W", order: 2 },
+    { platform: "youtube", icon: "youtube", url: "https://youtube.com/@adevosxtech?si=i69Tqeja_osNclkR", order: 3 },
+    { platform: "facebook", icon: "facebook", url: "https://www.facebook.com/share/1DCkqCCRSh", order: 4 },
+    { platform: "instagram", icon: "instagram", url: "https://www.instagram.com/adevosx?igsh=eGhhZGF6M3ZreTVz", order: 5 },
+    { platform: "telegram", icon: "telegram", url: "https://t.me/adevosXch1", order: 6 },
+    { platform: "tiktok", icon: "tiktok", url: "https://tiktok.com/@adevosx", order: 7 },
   ]);
 
   /* ---------------- Footer links ---------------- */
