@@ -115,7 +115,7 @@ async function seed() {
       name: "Adevos Min-Bot", slug: "adevos-min-bot",
       description: "A free, no-cost WhatsApp bot to get you started instantly.",
       author: "Adevos", imageUrl: IMG("minbot", 800, 450),
-      isFree: true, freeWebsiteUrl: "https://minbot.adevosxtech.com",
+      isFree: true, freeWebsiteUrl: "https://minbot.adevosxtech.site",
       badge: "none", order: 1,
     },
     {
