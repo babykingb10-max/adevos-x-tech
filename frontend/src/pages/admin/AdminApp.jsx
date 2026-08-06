@@ -83,8 +83,8 @@ export default function AdminApp() {
         </div>
       )}
 
-        </nav>
-      </aside>
+      
+   
 
       <main className="flex-1 p-6 pt-20 md:pt-6 overflow-y-auto overflow-x-hidden min-w-0">
         <Routes>
