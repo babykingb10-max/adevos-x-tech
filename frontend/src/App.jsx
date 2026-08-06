@@ -8,7 +8,6 @@ import BotsAvailable from "./pages/BotsAvailable";
 import BotManagement from "./pages/BotManagement";
 import Deployment from "./pages/Deployment";
 import Payment from "./pages/Payment";
-import Account from "./pages/Account";
 import SignIn from "./pages/SignIn";
 import AdminApp from "./pages/admin/AdminApp";
 
@@ -32,7 +31,6 @@ export default function App() {
                 <Route path="/bot-management" element={<BotManagement />} />
                 <Route path="/deployment" element={<Deployment />} />
                 <Route path="/payment" element={<Payment />} />
-                <Route path="/account" element={<Account />} />
                 <Route path="/sign-in" element={<SignIn />} />
               </Routes>
             </main>
