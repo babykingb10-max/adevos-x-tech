@@ -3,6 +3,8 @@ import UpdatesPopup from "./UpdatesPopup";
 import TutorialsPopup from "./TutorialsPopup";
 import FeedbackPopup from "./FeedbackPopup";
 import PlanSelectPopup from "./PlanSelectPopup";
+import AccountPopup from "./AccountPopup";
+import MyPaymentsPopup from "./MyPaymentsPopup";
 
 export default function PopupHost() {
   const { popup, close } = usePopup();
@@ -17,9 +19,11 @@ export default function PopupHost() {
       return <FeedbackPopup onClose={close} defaultCategory={popup.payload?.category} />;
     case "plan_select":
       return <PlanSelectPopup onClose={close} />;
+    case "account":
+      return <AccountPopup onClose={close} />;
+    case "my_payments":
+      return <MyPaymentsPopup onClose={close} />;
     default:
-      // Falls back gracefully for any tutorial:xxx / unmapped key so a stray
-      // destination string never crashes the UI — extend the switch as needed.
       return null;
   }
 }
