@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import api from "../api/client";
 import Heading from "../components/ui/Heading";
+import { getIcon } from "../lib/icons";
 
 export default function Payment() {
   const [params] = useSearchParams();
@@ -11,19 +12,21 @@ export default function Payment() {
 
   const [methods, setMethods] = useState([]);
   const [packages, setPackages] = useState([]);
+  const [rates, setRates] = useState(null);
   const [method, setMethod] = useState(null);
   const [pkg, setPkg] = useState(null);
   const [currency, setCurrency] = useState("USD");
   const [tx, setTx] = useState(null);
+  const [instructions, setInstructions] = useState(null);
   const [proofRef, setProofRef] = useState("");
 
   useEffect(() => {
     api.get(`/payments/methods?plan=${plan}`).then((r) => setMethods(r.data)).catch(() => {});
     api.get(`/payments/packages?plan=${plan}`).then((r) => setPackages(r.data)).catch(() => {});
+    api.get("/payments/currency-rates").then((r) => setRates(r.data)).catch(() => {});
   }, [plan]);
 
   useEffect(() => {
-    // When AV Coins / Paystack / PayPal confirm the transaction, move straight to deployment
     if (tx?.status === "confirmed" && botId) {
       const timer = setTimeout(() => navigate(`/deployment?bot=${botId}&duration=${pkg.durationWeeks}`), 1200);
       return () => clearTimeout(timer);
@@ -32,16 +35,26 @@ export default function Payment() {
 
   const ready = method && pkg;
 
+  // Converts the package's base-currency (USD) price into the selected display currency
+  function displayPrice(p) {
+    if (method?.key === "av_coins") return `${p.priceCoins} AV`;
+    if (!rates?.rates) return `${p.priceUSD} USD`;
+    const rate = rates.rates[currency] || 1;
+    const converted = (p.priceUSD * rate).toFixed(currency === "USD" ? 2 : 0);
+    return `${converted} ${currency}`;
+  }
+
   async function handleContinue() {
     const { data } = await api.post("/payments/transactions", {
       plan, durationWeeks: pkg.durationWeeks, method: method.key, currency,
     });
 
     if (data.checkoutUrl) {
-      window.location.href = data.checkoutUrl; // Paystack-hosted checkout redirect
+      window.location.href = data.checkoutUrl;
       return;
     }
     setTx(data.transaction || data);
+    if (data.instructions) setInstructions(data.instructions);
   }
 
   async function submitProof() {
@@ -55,18 +68,22 @@ export default function Payment() {
 
       <Heading as="h2" className="text-lg text-center mb-4">Available Payment methods</Heading>
       <div className="flex flex-wrap gap-3 justify-center mb-8">
-        {methods.map((m) => (
-          <button key={m._id} onClick={() => setMethod(m)}
-            className={`card px-4 py-2 text-sm font-body ${method?._id === m._id ? "border-brand dark:border-brand-dark" : ""}`}>
-            {m.label}
-          </button>
-        ))}
+        {methods.map((m) => {
+          const Icon = getIcon(m.icon);
+          return (
+            <button key={m._id} onClick={() => setMethod(m)}
+              className={`card px-4 py-2 text-sm font-body flex items-center gap-2 ${method?._id === m._id ? "border-brand dark:border-brand-dark" : ""}`}>
+              <Icon className="text-brand dark:text-brand-dark" size={16} />
+              {m.label}
+            </button>
+          );
+        })}
       </div>
 
       <div className="flex justify-center mb-8">
         <select value={currency} onChange={(e) => setCurrency(e.target.value)}
                 className="card px-4 py-2 text-sm font-body bg-transparent">
-          <option>USD</option><option>TZS</option><option>KES</option><option>UGX</option>
+          {Object.keys(rates?.rates || { USD: 1 }).map((c) => <option key={c}>{c}</option>)}
         </select>
       </div>
 
@@ -76,9 +93,7 @@ export default function Payment() {
           <button key={p._id} onClick={() => setPkg(p)}
             className={`card p-4 text-center font-body ${pkg?._id === p._id ? "border-brand dark:border-brand-dark" : ""}`}>
             <p className="text-sm">{p.durationWeeks} weeks</p>
-            <p className="text-xs text-muted dark:text-muted-dark mt-1">
-              {method?.key === "av_coins" ? `${p.priceCoins} AV` : `${p.priceUSD} ${currency}`}
-            </p>
+            <p className="text-xs text-muted dark:text-muted-dark mt-1">{displayPrice(p)}</p>
           </button>
         ))}
       </div>
@@ -95,11 +110,15 @@ export default function Payment() {
 
           {tx.status === "pending" && method?.key === "manual" && (
             <div className="space-y-3">
-              <p>Send payment to the numbers below, then submit your transaction reference.</p>
-              <p className="text-muted dark:text-muted-dark">
-                Payment details (name/numbers) are configured by the admin and shown here once <code>MANUAL_PAYMENT_NAME</code> /
-                <code> MANUAL_PAYMENT_NUMBERS</code> env vars are set.
-              </p>
+              <p>Send payment to the details below, then submit your transaction reference.</p>
+              {instructions ? (
+                <div className="card p-3 bg-brand/5 dark:bg-brand-dark/5">
+                  <p><b>Pay to:</b> {instructions.payTo}</p>
+                  <p className="mt-1"><b>Numbers:</b> {instructions.numbers}</p>
+                </div>
+              ) : (
+                <p className="text-muted dark:text-muted-dark">Loading payment details...</p>
+              )}
               <input value={proofRef} onChange={(e) => setProofRef(e.target.value)} placeholder="Transaction reference"
                      className="w-full rounded-full px-4 py-2 bg-bg dark:bg-bg-dark border border-border dark:border-border-dark text-sm font-body outline-none" />
               <button onClick={submitProof} className="btn-primary w-full text-sm">Submit for review</button>
@@ -107,7 +126,7 @@ export default function Payment() {
           )}
 
           {tx.status === "awaiting_admin_review" && (
-            <p>Your payment proof was submitted and is awaiting admin confirmation. You'll be notified once it's reviewed.</p>
+            <p>Your payment proof was submitted and is awaiting admin confirmation. Check <b>My Payments</b> from your account for updates.</p>
           )}
 
           {tx.status === "pending" && method?.key === "paypal" && (
