@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import * as Icons from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import api from "../../api/client";
 import Heading from "../ui/Heading";
-
-const iconFor = (key) => Icons[
-  key.replace(/(^\w|-\w)/g, (m) => m.replace("-", "").toUpperCase())
-] || Icons.Sparkle;
+import { getIcon } from "../../lib/icons";
+import { useAuth } from "../../context/AuthContext";
+import { usePopup } from "../../context/PopupContext";
+import { resolveSmartDeploy } from "../../lib/smartDeploy";
 
 /* ---------------- Our Services ---------------- */
 export function ServicesSection() {
@@ -19,7 +18,7 @@ export function ServicesSection() {
       <p className="text-center text-muted dark:text-muted-dark font-body mb-8">What we offer</p>
       <div className="flex md:grid md:grid-cols-3 gap-4 overflow-x-auto scroll-row snap-x">
         {services.map((s) => {
-          const Icon = iconFor(s.icon === "whatsapp" || s.icon === "telegram" ? "message-circle" : s.icon);
+          const Icon = getIcon(s.icon);
           return (
             <div key={s._id} className="card min-w-[260px] snap-center p-6 flex flex-col items-center text-center">
               <Icon className="text-brand dark:text-brand-dark mb-3" size={32} />
@@ -34,9 +33,20 @@ export function ServicesSection() {
 }
 
 /* ---------------- Get in touch ---------------- */
-export function InTouchSection({ onOpenPopup }) {
+export function InTouchSection() {
   const [cards, setCards] = useState([]);
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { open: openPopup } = usePopup();
   useEffect(() => { api.get("/in-touch").then((r) => setCards(r.data)).catch(() => {}); }, []);
+
+  function handleClick(c) {
+    if (c.actionTarget === "smart:deploy") {
+      resolveSmartDeploy({ user, navigate, openPopup });
+    } else {
+      openPopup(c.actionTarget);
+    }
+  }
 
   return (
     <section className="py-12 px-4">
@@ -49,7 +59,7 @@ export function InTouchSection({ onOpenPopup }) {
             {c.actionType === "internal_link" ? (
               <Link to={c.actionTarget} className="btn-primary text-xs">{c.buttonLabel}</Link>
             ) : (
-              <button onClick={() => onOpenPopup?.(c.actionTarget)} className="btn-primary text-xs">{c.buttonLabel}</button>
+              <button onClick={() => handleClick(c)} className="btn-primary text-xs">{c.buttonLabel}</button>
             )}
           </div>
         ))}
@@ -70,9 +80,15 @@ export function SupportSection() {
       <div className="card p-8 max-w-2xl mx-auto text-center">
         <p className="text-muted dark:text-muted-dark font-body mb-6">{support.description}</p>
         <div className="flex justify-center gap-6">
-          <a href={support.communityUrl} target="_blank" rel="noreferrer" className="text-brand dark:text-brand-dark"><Icons.Users size={28} /></a>
-          <a href={support.whatsappUrl} target="_blank" rel="noreferrer" className="text-brand dark:text-brand-dark"><Icons.MessageCircle size={28} /></a>
-          <a href={support.telegramUrl} target="_blank" rel="noreferrer" className="text-brand dark:text-brand-dark"><Icons.Send size={28} /></a>
+          <a href={support.communityUrl} target="_blank" rel="noreferrer" className="text-brand dark:text-brand-dark">
+            {(() => { const Icon = getIcon(support.communityIcon || "community"); return <Icon size={28} />; })()}
+          </a>
+          <a href={support.whatsappUrl} target="_blank" rel="noreferrer" className="text-brand dark:text-brand-dark">
+            {(() => { const Icon = getIcon(support.whatsappIcon || "whatsapp"); return <Icon size={28} />; })()}
+          </a>
+          <a href={support.telegramUrl} target="_blank" rel="noreferrer" className="text-brand dark:text-brand-dark">
+            {(() => { const Icon = getIcon(support.telegramIcon || "telegram"); return <Icon size={28} />; })()}
+          </a>
         </div>
       </div>
     </section>
@@ -125,7 +141,7 @@ export function StayConnectedSection() {
         <p className="text-muted dark:text-muted-dark font-body mb-6">Follow us and subscribe</p>
         <div className="flex justify-center flex-wrap gap-4 mb-6">
           {links.map((l) => {
-            const Icon = iconFor(l.icon);
+            const Icon = getIcon(l.icon);
             return (
               <a key={l._id} href={l.url} target="_blank" rel="noreferrer"
                  className="w-10 h-10 rounded-full bg-brand/10 dark:bg-brand-dark/10 flex items-center justify-center text-brand dark:text-brand-dark">
