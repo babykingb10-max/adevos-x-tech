@@ -40,7 +40,7 @@ export default function AdminMenuBuilder() {
       <div className="space-y-2">
         {items.map((item) => (
           <div key={item._id} className="card bg-surface-dark border-border-dark p-3">
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center flex-wrap gap-2">
               <div className="text-sm font-body text-text-dark">
                 {item.label} {item.isHidden && <span className="text-xs text-muted-dark ml-2">(hidden)</span>}
                 <span className="text-xs text-muted-dark ml-2">{item.subItems?.length || 0} sub-items</span>
