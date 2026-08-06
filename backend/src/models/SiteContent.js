@@ -5,8 +5,11 @@ const SupportSchema = new mongoose.Schema(
   {
     description: { type: String, default: "" },
     communityUrl: { type: String, default: "" },
+    communityIcon: { type: String, default: "community" },
     whatsappUrl: { type: String, default: "" },
+    whatsappIcon: { type: String, default: "whatsapp" },
     telegramUrl: { type: String, default: "" },
+    telegramIcon: { type: String, default: "telegram" },
     isHidden: { type: Boolean, default: false },
   },
   { timestamps: true }
