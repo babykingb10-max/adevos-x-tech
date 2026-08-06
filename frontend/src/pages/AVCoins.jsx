@@ -1,15 +1,29 @@
 import { useEffect, useState } from "react";
 import api from "../api/client";
 import Heading from "../components/ui/Heading";
+import { useAuth } from "../context/AuthContext";
 
 export default function AVCoins() {
   const [data, setData] = useState(null);
   const [history, setHistory] = useState([]);
+  const { user } = useAuth();
 
-  useEffect(() => {
-    api.get("/av-coins/me").then((r) => setData(r.data)).catch(() => {});
-    api.get("/av-coins/referral-history").then((r) => setHistory(r.data)).catch(() => {});
-  }, []);
+  async function load() {
+    const [me, hist] = await Promise.all([
+      api.get("/av-coins/me"),
+      api.get("/av-coins/referral-history"),
+    ]);
+    setData(me.data);
+    setHistory(hist.data);
+  }
+  useEffect(() => { load(); }, []);
+
+  async function generateReferral() {
+    await api.post("/av-coins/generate-referral", { name: user?.name });
+    load();
+  }
+
+  const referralUrl = data?.referralCode ? `${window.location.origin}/r/${data.referralCode}` : null;
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-10">
@@ -27,12 +41,16 @@ export default function AVCoins() {
 
       <Heading as="h2" className="text-lg mb-3">Your referral link</Heading>
       <div className="card p-4">
-        {data?.referralCode ? (
-          <p className="text-sm font-body text-brand dark:text-brand-dark break-all">
-            {import.meta.env.VITE_API_URL?.replace("/api", "")}/r/{data.referralCode}
-          </p>
+        {referralUrl ? (
+          <>
+            <p className="text-sm font-body text-brand dark:text-brand-dark break-all mb-3">{referralUrl}</p>
+            <div className="flex gap-2">
+              <button onClick={() => navigator.clipboard.writeText(referralUrl)} className="text-xs px-3 py-1.5 rounded-full btn-outline">Copy</button>
+              <button onClick={() => navigator.share?.({ url: referralUrl })} className="text-xs px-3 py-1.5 rounded-full btn-outline">Share</button>
+            </div>
+          </>
         ) : (
-          <p className="text-sm text-muted dark:text-muted-dark font-body">Generate your link from the Account page to start earning.</p>
+          <button onClick={generateReferral} className="text-sm px-4 py-2 rounded-full btn-primary">Generate referral link</button>
         )}
       </div>
     </div>
