@@ -113,18 +113,18 @@ async function seed() {
   await Bot.insertMany([
     {
       name: "Adevos Min-Bot", slug: "adevos-min-bot",
-      description: "A free, WhatsApp min-bot with few commands with rare performances.",
+      description: "A free, no-cost WhatsApp bot to get you started instantly.",
       author: "Adevos", imageUrl: IMG("minbot", 800, 450),
-      isFree: true, freeWebsiteUrl: "https://minbot.adevosxtech.site",
+      isFree: true, freeWebsiteUrl: "https://minbot.adevosxtech.com",
       badge: "none", order: 1,
     },
     {
       name: "Adevos-X Bot", slug: "adevos-x-bot",
       description: "Multi-Device Popular WhatsApp bot with rich features.",
       author: "Adevos", imageUrl: IMG("xbot", 800, 450),
-      githubRepoUrl: "https://github.com/adevos-x-tech/adevosxbot",
-      pairSiteUrl: "https://pair.adevosxtech.site",
-      badge: "popular", ratingAverage: 9.0, ratingCount: 214, order: 2,
+      githubRepoUrl: "https://github.com/adevos/adevos-x-bot",
+      pairSiteUrl: "https://pair.adevosxtech.com/x-bot",
+      badge: "popular", ratingAverage: 8.0, ratingCount: 214, order: 2,
     },
     {
       name: "Adevos Nova Bot", slug: "adevos-nova-bot",
@@ -180,9 +180,9 @@ async function seed() {
   await Support.deleteMany();
   await Support.create({
     description: "You need to get a quick response from Admins? Join our community and channels — our team and fellow builders are online around the clock.",
-    communityUrl: "https://chat.whatsapp.com/HXSngTMaoOD1Zodkttre70",
-    whatsappUrl: "https://whatsapp.com/channel/0029Vb6wIVU9Bb5w69FQvt0W",
-    telegramUrl: "https://t.me/adevosXch1",
+    communityUrl: "https://t.me/adevosxtech_community",
+    whatsappUrl: "https://wa.me/255700000000",
+    telegramUrl: "https://t.me/adevosxtech",
   });
 
   /* ---------------- Testimonials ---------------- */
@@ -197,12 +197,12 @@ async function seed() {
   await StayConnectedLink.deleteMany();
   await StayConnectedLink.insertMany([
     { platform: "twitter", icon: "twitter", url: "https://twitter.com/adevosxtech", order: 1 },
-    { platform: "whatsapp", icon: "whatsapp", url: "https://whatsapp.com/channel/0029Vb6wIVU9Bb5w69FQvt0W", order: 2 },
-    { platform: "youtube", icon: "youtube", url: "https://youtube.com/@adevosxtech?si=i69Tqeja_osNclkR", order: 3 },
-    { platform: "facebook", icon: "facebook", url: "https://www.facebook.com/share/1DCkqCCRSh", order: 4 },
-    { platform: "instagram", icon: "instagram", url: "https://www.instagram.com/adevosx?igsh=eGhhZGF6M3ZreTVz", order: 5 },
-    { platform: "telegram", icon: "telegram", url: "https://t.me/adevosXch1", order: 6 },
-    { platform: "tiktok", icon: "tiktok", url: "https://tiktok.com/@adevosx", order: 7 },
+    { platform: "whatsapp", icon: "whatsapp", url: "https://wa.me/255700000000", order: 2 },
+    { platform: "youtube", icon: "youtube", url: "https://youtube.com/@adevosxtech", order: 3 },
+    { platform: "facebook", icon: "facebook", url: "https://facebook.com/adevosxtech", order: 4 },
+    { platform: "instagram", icon: "instagram", url: "https://instagram.com/adevosxtech", order: 5 },
+    { platform: "telegram", icon: "telegram", url: "https://t.me/adevosxtech", order: 6 },
+    { platform: "tiktok", icon: "tiktok", url: "https://tiktok.com/@adevosxtech", order: 7 },
   ]);
 
   /* ---------------- Footer links ---------------- */
@@ -223,17 +223,18 @@ async function seed() {
   /* ---------------- Hamburger menu ---------------- */
   await MenuItem.deleteMany();
   await MenuItem.insertMany([
-    { label: "Home", icon: "home", subItems: [{ label: "Dashboard", icon: "layout-dashboard", destination: "/", order: 1 }], order: 1 },
+    { label: "Home", icon: "home", subItems: [{ label: "Dashboard", icon: "dashboard", destination: "/", order: 1 }], order: 1 },
     { label: "Updates", icon: "bell", subItems: [{ label: "Latest News", icon: "newspaper", destination: "popup:updates", order: 1 }], order: 2 },
     {
       label: "Bot Deployment", icon: "cloud-upload",
       subItems: [
-        { label: "Available bots", icon: "bot", destination: "popup:plan_select", order: 1 },
-        { label: "Manage your bot", icon: "settings", destination: "/bot-management", order: 2 },
+        { label: "Deploy bot", icon: "rocket", destination: "smart:deploy", order: 1 },
+        { label: "Available bots", icon: "code", destination: "popup:plan_select", order: 2 },
+        { label: "Manage your bot", icon: "key", destination: "/bot-management", order: 3 },
       ],
       order: 3,
     },
-    { label: "AV Coins", icon: "coins", destination: "/av-coins", order: 4 },
+    { label: "AV Coins", icon: "coin", destination: "/av-coins", order: 4 },
     {
       label: "Tutorials", icon: "graduation-cap",
       subItems: [
@@ -244,7 +245,7 @@ async function seed() {
       order: 5,
     },
     { label: "Feedback", icon: "message-square", subItems: [{ label: "Send your response", icon: "send", destination: "popup:feedback", order: 1 }], order: 6 },
-    { label: "My Account", icon: "user-circle", destination: "/account", order: 7 },
+    { label: "My Account", icon: "user-circle", destination: "popup:account", order: 7 },
   ]);
 
   /* ---------------- Updates ---------------- */
