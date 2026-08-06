@@ -47,6 +47,47 @@ router.patch("/:id/package", protect, adminOnly, async (req, res) => {
   res.json(user);
 });
 
+// Admin grants a plan + package directly (no payment required) — e.g. "guarantee"
+// a user 2 weeks of the User plan for free. Sets activePackage.expiresAt so the
+// smart-deploy flow treats it exactly like a paid, confirmed subscription.
+router.post("/:id/grant-plan", protect, adminOnly, async (req, res) => {
+  const { plan, durationWeeks } = req.body; // plan: "user"|"deployer", durationWeeks: 2|4|8
+  const user = await User.findById(req.params.id);
+  if (!user) return res.status(404).json({ message: "Not found" });
+
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + Number(durationWeeks) * 7);
+  user.plan = plan;
+  user.activePackage = { paymentMethod: "manual", durationWeeks, startedAt: new Date(), expiresAt };
+  await user.save();
+  res.json(user);
+});
+
+// Adjust one user's AV Coins balance (positive to add, negative to deduct)
+router.patch("/:id/coins", protect, adminOnly, async (req, res) => {
+  const { amount } = req.body;
+  const user = await User.findById(req.params.id);
+  if (!user) return res.status(404).json({ message: "Not found" });
+  user.coins = Math.max(0, user.coins + Number(amount));
+  if (Number(amount) > 0) user.coinsEarnedThisMonth += Number(amount);
+  await user.save();
+  res.json(user);
+});
+
+// Adjust coins for multiple users at once
+router.post("/bulk/coins", protect, adminOnly, async (req, res) => {
+  const { userIds, amount } = req.body;
+  const users = await User.find({ _id: { $in: userIds } });
+  await Promise.all(
+    users.map((u) => {
+      u.coins = Math.max(0, u.coins + Number(amount));
+      if (Number(amount) > 0) u.coinsEarnedThisMonth += Number(amount);
+      return u.save();
+    })
+  );
+  res.json({ message: `Updated ${users.length} users` });
+});
+
 /* ---------------- Self-service: profile + theme + own account ---------------- */
 router.put("/me/profile", protect, async (req, res) => {
   const { name, avatarUrl, theme } = req.body;
