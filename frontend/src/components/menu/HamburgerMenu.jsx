@@ -67,6 +67,10 @@ export default function HamburgerMenu({ open, onClose }) {
         </div>
 
         <div className="px-4 pb-8">
+          <p className="text-yellow-400 text-xs mb-2">
+            DEBUG: {items.length} items loaded, query="{query}", filtered={filtered.length}
+          </p>
+
           <div className="flex items-center gap-2 border border-white/20 rounded-full px-4 py-2 mb-4">
             <Search size={16} className="text-gray-400 shrink-0" />
             <input
