@@ -21,7 +21,7 @@
     THE single rule for every Heading / Brand name / Title on the site:
     same font (Rajdhani), same color per theme, everywhere. Never mix colors
     within one heading (e.g. never "Adevos-X" one color and "Tech" another).
-    Always compose headings with this class instead of ad-hoc styles.
+    Always compose headings with this class instead of ad-hoc styles again.
   */
   .heading {
     @apply font-display font-semibold text-brand dark:text-brand-dark tracking-wide;
