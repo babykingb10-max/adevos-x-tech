@@ -1,14 +1,16 @@
 import { useEffect, useState } from "react";
 import api from "../../api/client";
+import { useConfirm } from "../../context/ConfirmContext";
 
 export default function AdminResponses() {
   const [responses, setResponses] = useState([]);
+  const confirm = useConfirm();
 
   async function load() { const { data } = await api.get("/feedback"); setResponses(data); }
   useEffect(() => { load(); }, []);
 
   async function setStatus(id, status) { await api.patch(`/feedback/${id}/status`, { status }); load(); }
-  async function remove(id) { if (confirm("Delete this response?")) { await api.delete(`/feedback/${id}`); load(); } }
+  async function remove(id) { if (await confirm("Delete this response?")) { await api.delete(`/feedback/${id}`); load(); } }
 
   return (
     <div>
