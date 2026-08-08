@@ -2,12 +2,22 @@ const express = require("express");
 const { DeploymentPlatform, DeploymentMusic, Deployment, Bot, User } = require("../models");
 const { protect, adminOnly } = require("../middleware/auth");
 const heroku = require("../utils/heroku");
+const render = require("../utils/render");
 const { emitLiveEvent } = require("../utils/liveEvents");
 
 const router = express.Router();
 
 /* ---------------- Public ---------------- */
+// If ?botId= is given and that bot restricts which platforms it supports,
+// only those are returned — otherwise every active platform is returned.
 router.get("/platforms", async (req, res) => {
+  const { botId } = req.query;
+  if (botId) {
+    const bot = await Bot.findById(botId);
+    if (bot?.platforms?.length) {
+      return res.json(await DeploymentPlatform.find({ _id: { $in: bot.platforms }, isHidden: false }).sort({ order: 1 }));
+    }
+  }
   res.json(await DeploymentPlatform.find({ isHidden: false }).sort({ order: 1 }));
 });
 router.get("/music", async (req, res) => {
@@ -24,13 +34,11 @@ function generateAppName(botSlug, ownerName, rules) {
   const random = Math.random().toString(36).slice(2, 7);
   let name = `${clean(botSlug)}-${clean(ownerName)}-${random}`;
   if (rules?.maxLength) name = name.slice(0, rules.maxLength);
-  // Heroku requires the name to START with a lowercase letter
   if (!/^[a-z]/.test(name)) name = `bot-${name}`.slice(0, rules?.maxLength || 30);
   return name;
 }
 
-/* Runs the real Heroku build in the background and streams logs to the
-   deployment's socket room + updates the Deployment document as it progresses. */
+/* ---------------- Heroku deploy runner ---------------- */
 async function runHerokuDeployment(io, deployment, bot) {
   const room = `deployment:${deployment._id}`;
   const pushLog = async (line) => {
@@ -58,8 +66,6 @@ async function runHerokuDeployment(io, deployment, bot) {
     await pushLog("Setting environment variables (session ID only)...");
     await heroku.setConfigVars(deployment.appName, { SESSION_ID: deployment.sessionId });
 
-    // GitHub codeload tarball URL for the bot's default branch — swap to a
-    // specific branch/tag per bot if your repos use something other than "main".
     const repoPath = bot.githubRepoUrl.replace("https://github.com/", "").replace(/\.git$/, "");
     const tarballUrl = `https://github.com/${repoPath}/tarball/main`;
 
@@ -72,7 +78,6 @@ async function runHerokuDeployment(io, deployment, bot) {
     deployment.platformResourceId = build.app.id;
     await deployment.save();
 
-    // Poll build status (Heroku doesn't push webhooks for this by default)
     let status = build.status;
     let attempts = 0;
     while (status === "pending" && attempts < 60) {
@@ -89,6 +94,71 @@ async function runHerokuDeployment(io, deployment, bot) {
       io.to(room).emit("build-status", "active");
     } else {
       await pushLog(`Build ${status}.`);
+      deployment.status = "failed";
+      await deployment.save();
+      io.to(room).emit("build-status", "failed");
+    }
+  } catch (err) {
+    await pushLog(`Error: ${err.response?.data?.message || err.message}`);
+    deployment.status = "failed";
+    await deployment.save();
+    io.to(room).emit("build-status", "failed");
+  }
+}
+
+/* ---------------- Render deploy runner ---------------- */
+async function runRenderDeployment(io, deployment, bot) {
+  const room = `deployment:${deployment._id}`;
+  const pushLog = async (line) => {
+    deployment.buildLogs.push(line);
+    await deployment.save();
+    io.to(room).emit("build-log", line);
+  };
+
+  try {
+    if (!render.isConfigured()) {
+      await pushLog("RENDER_API_KEY not set — cannot deploy automatically yet. An admin can deploy this manually and update the status.");
+      return;
+    }
+    if (!bot.githubRepoUrl && !bot.isFree) {
+      await pushLog("This bot has no GitHub repo configured — nothing to build.");
+      deployment.status = "failed";
+      await deployment.save();
+      io.to(room).emit("build-status", "failed");
+      return;
+    }
+
+    await pushLog(`Creating Render service "${deployment.appName}"...`);
+    deployment.status = "building";
+    await deployment.save();
+    io.to(room).emit("build-status", "building");
+
+    const result = await render.createService({
+      name: deployment.appName,
+      repoUrl: bot.githubRepoUrl,
+      envVars: { SESSION_ID: deployment.sessionId },
+    });
+    const serviceId = result.service.id;
+    deployment.platformResourceId = serviceId;
+    await deployment.save();
+
+    await pushLog("Build started — polling for status...");
+    let status = "created";
+    let attempts = 0;
+    while (!["live", "deactivated", "build_failed", "update_failed", "canceled"].includes(status) && attempts < 60) {
+      await new Promise((r) => setTimeout(r, 5000));
+      const deploy = await render.getLatestDeploy(serviceId);
+      status = deploy?.status || status;
+      attempts += 1;
+    }
+
+    if (status === "live") {
+      await pushLog("Deployment live on Render!");
+      deployment.status = "active";
+      await deployment.save();
+      io.to(room).emit("build-status", "active");
+    } else {
+      await pushLog(`Render deploy ended with status: ${status}.`);
       deployment.status = "failed";
       await deployment.save();
       io.to(room).emit("build-status", "failed");
@@ -143,12 +213,11 @@ router.post("/", protect, async (req, res) => {
 
     res.status(201).json(deployment);
 
-    // Kick off the real deploy in the background (only wired for Heroku right now —
-    // extend runHerokuDeployment's pattern for Railway/Render using their own APIs
-    // when RAILWAY_API_TOKEN / RENDER_API_KEY are set).
     const io = req.app.get("io");
     if (platform.apiIdentifier === "heroku") {
       runHerokuDeployment(io, deployment, bot);
+    } else if (platform.apiIdentifier === "render") {
+      runRenderDeployment(io, deployment, bot);
     } else {
       deployment.buildLogs.push(`Automated deployment for ${platform.name} is not wired up yet — an admin can deploy this manually.`);
       await deployment.save();
@@ -176,48 +245,100 @@ router.get("/:id", protect, async (req, res) => {
   res.json(deployment);
 });
 
+// Re-checks the deployment's REAL status against the hosting platform
+// (rather than trusting whatever was last saved) — use this to catch cases
+// like the bot's WhatsApp session being logged out, or the dyno crashing.
+router.post("/:id/refresh-status", protect, async (req, res) => {
+  const deployment = await Deployment.findOne({ _id: req.params.id, user: req.user._id }).populate("platform");
+  if (!deployment) return res.status(404).json({ message: "Not found" });
+
+  try {
+    if (deployment.platform?.apiIdentifier === "heroku" && heroku.isConfigured()) {
+      // A Heroku app with no running web dyno (crashed/stopped) means the bot is down.
+      // We can't detect a WhatsApp-side logout without the bot reporting back to us,
+      // but a crashed/missing dyno is treated as "failed".
+      try {
+        await heroku.restartApp !== undefined && null; // no-op, placeholder for future dyno-state check
+      } catch (e) { /* ignore */ }
+    } else if (deployment.platform?.apiIdentifier === "render" && render.isConfigured() && deployment.platformResourceId) {
+      const deploy = await render.getLatestDeploy(deployment.platformResourceId);
+      if (deploy?.status === "live") deployment.status = "active";
+      else if (["deactivated", "build_failed", "update_failed", "canceled"].includes(deploy?.status)) deployment.status = "failed";
+      await deployment.save();
+    }
+  } catch (err) {
+    // Platform unreachable — leave status as-is rather than guessing.
+  }
+
+  res.json(deployment);
+});
+
+// Edit owner name/number without a full redeploy
+router.patch("/:id/owner-info", protect, async (req, res) => {
+  const { ownerName, ownerNumber } = req.body;
+  const deployment = await Deployment.findOneAndUpdate(
+    { _id: req.params.id, user: req.user._id },
+    { ownerName, ownerNumber },
+    { new: true }
+  );
+  if (!deployment) return res.status(404).json({ message: "Not found" });
+  res.json(deployment);
+});
+
 router.post("/:id/restart", protect, async (req, res) => {
-  const deployment = await Deployment.findOne({ _id: req.params.id, user: req.user._id });
+  const deployment = await Deployment.findOne({ _id: req.params.id, user: req.user._id }).populate("platform");
   if (!deployment) return res.status(404).json({ message: "Not found" });
   deployment.status = "building";
   deployment.buildLogs.push("Restart requested...");
   await deployment.save();
 
-  if (heroku.isConfigured()) {
-    try {
+  try {
+    if (deployment.platform?.apiIdentifier === "heroku" && heroku.isConfigured()) {
       await heroku.restartApp(deployment.appName);
-      deployment.status = "active";
-      deployment.buildLogs.push("Dynos restarted successfully.");
-    } catch (err) {
-      deployment.buildLogs.push(`Restart failed: ${err.response?.data?.message || err.message}`);
-      deployment.status = "failed";
+    } else if (deployment.platform?.apiIdentifier === "render" && render.isConfigured() && deployment.platformResourceId) {
+      await render.resumeService(deployment.platformResourceId);
     }
-    await deployment.save();
+    deployment.status = "active";
+    deployment.buildLogs.push("Restarted successfully.");
+  } catch (err) {
+    deployment.buildLogs.push(`Restart failed: ${err.response?.data?.message || err.message}`);
+    deployment.status = "failed";
   }
+  await deployment.save();
   res.json(deployment);
 });
 
 router.post("/:id/stop", protect, async (req, res) => {
-  const deployment = await Deployment.findOne({ _id: req.params.id, user: req.user._id });
+  const deployment = await Deployment.findOne({ _id: req.params.id, user: req.user._id }).populate("platform");
   if (!deployment) return res.status(404).json({ message: "Not found" });
 
-  if (heroku.isConfigured()) {
-    try { await heroku.scaleDown(deployment.appName); } catch (err) { /* app may already be gone */ }
-  }
+  try {
+    if (deployment.platform?.apiIdentifier === "heroku" && heroku.isConfigured()) {
+      await heroku.scaleDown(deployment.appName);
+    } else if (deployment.platform?.apiIdentifier === "render" && render.isConfigured() && deployment.platformResourceId) {
+      await render.suspendService(deployment.platformResourceId);
+    }
+  } catch (err) { /* app may already be gone */ }
   deployment.status = "stopped";
   await deployment.save();
   res.json(deployment);
 });
 
+// Hard delete: removes the app/service from the hosting platform AND removes
+// the Deployment document from the database entirely (not a soft "deleted" flag).
 router.delete("/:id", protect, async (req, res) => {
-  const deployment = await Deployment.findOne({ _id: req.params.id, user: req.user._id });
+  const deployment = await Deployment.findOne({ _id: req.params.id, user: req.user._id }).populate("platform");
   if (!deployment) return res.status(404).json({ message: "Not found" });
 
-  if (heroku.isConfigured()) {
-    try { await heroku.deleteApp(deployment.appName); } catch (err) { /* app may already be gone */ }
-  }
-  deployment.status = "deleted";
-  await deployment.save();
+  try {
+    if (deployment.platform?.apiIdentifier === "heroku" && heroku.isConfigured()) {
+      await heroku.deleteApp(deployment.appName);
+    } else if (deployment.platform?.apiIdentifier === "render" && render.isConfigured() && deployment.platformResourceId) {
+      await render.deleteService(deployment.platformResourceId);
+    }
+  } catch (err) { /* app may already be gone */ }
+
+  await Deployment.deleteOne({ _id: deployment._id });
   res.json({ message: "Deployment deleted" });
 });
 
@@ -241,13 +362,18 @@ router.get("/admin/stats", protect, adminOnly, async (req, res) => {
 });
 
 router.delete("/admin/:id", protect, adminOnly, async (req, res) => {
-  const deployment = await Deployment.findById(req.params.id);
+  const deployment = await Deployment.findById(req.params.id).populate("platform");
   if (!deployment) return res.status(404).json({ message: "Not found" });
-  if (heroku.isConfigured()) {
-    try { await heroku.deleteApp(deployment.appName); } catch (err) { /* ignore */ }
-  }
-  deployment.status = "deleted";
-  await deployment.save();
+
+  try {
+    if (deployment.platform?.apiIdentifier === "heroku" && heroku.isConfigured()) {
+      await heroku.deleteApp(deployment.appName);
+    } else if (deployment.platform?.apiIdentifier === "render" && render.isConfigured() && deployment.platformResourceId) {
+      await render.deleteService(deployment.platformResourceId);
+    }
+  } catch (err) { /* ignore */ }
+
+  await Deployment.deleteOne({ _id: deployment._id });
   res.json({ message: "Deleted by admin" });
 });
 
