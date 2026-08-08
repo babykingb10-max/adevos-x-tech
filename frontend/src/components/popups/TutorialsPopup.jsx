@@ -1,11 +1,20 @@
 import { useEffect, useState } from "react";
-import * as Icons from "lucide-react";
 import api from "../../api/client";
 import Modal from "../ui/Modal";
+import { getIcon } from "../../lib/icons";
 
-const iconFor = (key) => Icons[
-  (key || "graduation-cap").replace(/(^\w|-\w)/g, (m) => m.replace("-", "").toUpperCase())
-] || Icons.GraduationCap;
+// Converts a normal YouTube watch/share URL into an embeddable URL.
+function toYoutubeEmbed(url) {
+  try {
+    const u = new URL(url);
+    if (u.hostname.includes("youtu.be")) return `https://www.youtube.com/embed${u.pathname}`;
+    const id = u.searchParams.get("v");
+    if (id) return `https://www.youtube.com/embed/${id}`;
+    return url;
+  } catch {
+    return url;
+  }
+}
 
 export default function TutorialsPopup({ onClose }) {
   const [tutorials, setTutorials] = useState([]);
@@ -16,7 +25,21 @@ export default function TutorialsPopup({ onClose }) {
   if (playing) {
     return (
       <Modal title={playing.title} onClose={() => setPlaying(null)}>
-        <video controls autoPlay src={playing.videoUrl} className="w-full rounded-lg" />
+        {playing.description && (
+          <p className="text-sm text-muted dark:text-muted-dark font-body mb-3">{playing.description}</p>
+        )}
+        {playing.youtubeUrl ? (
+          <div className="aspect-video">
+            <iframe
+              src={toYoutubeEmbed(playing.youtubeUrl)}
+              className="w-full h-full rounded-lg"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
+        ) : (
+          <video controls autoPlay src={playing.videoUrl} className="w-full rounded-lg" />
+        )}
       </Modal>
     );
   }
@@ -25,7 +48,7 @@ export default function TutorialsPopup({ onClose }) {
     <Modal title="Available tutorials" onClose={onClose}>
       <div className="space-y-2">
         {tutorials.map((t) => {
-          const Icon = iconFor(t.icon);
+          const Icon = getIcon(t.icon);
           return (
             <button key={t._id} onClick={() => setPlaying(t)}
               className="w-full flex items-center gap-3 card p-3 text-left">
