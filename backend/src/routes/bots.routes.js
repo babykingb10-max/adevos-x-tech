@@ -14,7 +14,7 @@ router.get("/", async (req, res) => {
 });
 
 router.get("/:id", async (req, res) => {
-  const bot = await Bot.findById(req.params.id);
+  const bot = await Bot.findById(req.params.id).populate("platforms");
   if (!bot) return res.status(404).json({ message: "Not found" });
   res.json(bot);
 });
@@ -44,7 +44,7 @@ router.post("/:id/rate", protect, async (req, res) => {
 
 /* Admin CRUD */
 router.get("/admin/all", protect, adminOnly, async (req, res) => {
-  res.json(await Bot.find().sort({ order: 1 }));
+  res.json(await Bot.find().populate("platforms").sort({ order: 1 }));
 });
 router.post("/", protect, adminOnly, async (req, res) => {
   res.status(201).json(await Bot.create(req.body));
