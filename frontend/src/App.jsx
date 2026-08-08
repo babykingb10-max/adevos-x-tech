@@ -2,6 +2,7 @@ import { Routes, Route } from "react-router-dom";
 import Navbar from "./components/layout/Navbar";
 import Footer from "./components/layout/Footer";
 import PopupHost from "./components/popups/PopupHost";
+import { BackButton, ScrollToTopButton } from "./components/ui/NavHelpers";
 import Home from "./pages/Home";
 import AVCoins from "./pages/AVCoins";
 import BotsAvailable from "./pages/BotsAvailable";
@@ -36,6 +37,8 @@ export default function App() {
             </main>
             <Footer />
             <PopupHost />
+            <BackButton />
+            <ScrollToTopButton />
           </div>
         }
       />
