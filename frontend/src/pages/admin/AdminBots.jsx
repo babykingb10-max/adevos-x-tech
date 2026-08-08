@@ -1,19 +1,34 @@
 import { useEffect, useState } from "react";
 import api from "../../api/client";
+import { useConfirm } from "../../context/ConfirmContext";
 
 const empty = () => ({
   name: "", slug: "", description: "", author: "Adevos", imageUrl: "",
   isFree: false, freeWebsiteUrl: "", githubRepoUrl: "", pairSiteUrl: "",
-  badge: "none", availableForPlans: ["user", "deployer"],
-  ratingAverage: 0, ratingCount: 0,
+  badge: "none", availableForPlans: ["user", "deployer"], platforms: [],
+  ratingAverage: 0, ratingCount: 0, order: 0,
 });
 
 export default function AdminBots() {
   const [items, setItems] = useState([]);
+  const [platforms, setPlatforms] = useState([]);
   const [editing, setEditing] = useState(null);
+  const confirm = useConfirm();
 
-  async function load() { const { data } = await api.get("/bots/admin/all"); setItems(data); }
+  async function load() {
+    const [bots, plats] = await Promise.all([
+      api.get("/bots/admin/all"),
+      api.get("/deployment-platforms/admin/all"),
+    ]);
+    setItems(bots.data);
+    setPlatforms(plats.data);
+  }
   useEffect(() => { load(); }, []);
+
+  function toEditable(bot) {
+    // platforms comes populated (array of objects) from the API — reduce to ids for the form
+    return { ...bot, platforms: (bot.platforms || []).map((p) => (typeof p === "string" ? p : p._id)) };
+  }
 
   async function save(e) {
     e.preventDefault();
@@ -23,16 +38,26 @@ export default function AdminBots() {
     load();
   }
   async function toggleHide(id) { await api.patch(`/bots/${id}/hide`); load(); }
-  async function remove(id) { if (confirm("Delete this bot?")) { await api.delete(`/bots/${id}`); load(); } }
+  async function remove(id) {
+    if (await confirm("Delete this bot? This cannot be undone.")) {
+      await api.delete(`/bots/${id}`);
+      load();
+    }
+  }
   function togglePlan(plan) {
     const set = new Set(editing.availableForPlans || []);
     set.has(plan) ? set.delete(plan) : set.add(plan);
     setEditing({ ...editing, availableForPlans: [...set] });
   }
+  function togglePlatform(id) {
+    const set = new Set(editing.platforms || []);
+    set.has(id) ? set.delete(id) : set.add(id);
+    setEditing({ ...editing, platforms: [...set] });
+  }
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex justify-between items-center flex-wrap gap-2 mb-4">
         <h2 className="heading text-xl">Bots</h2>
         <button onClick={() => setEditing(empty())} className="btn-primary text-xs">Add</button>
       </div>
@@ -41,11 +66,12 @@ export default function AdminBots() {
         {items.map((b) => (
           <div key={b._id} className="card bg-surface-dark border-border-dark p-3 flex justify-between items-center flex-wrap gap-2">
             <div className="text-sm font-body text-text-dark">
-              {b.name} {b.isFree && <span className="text-xs text-brand-dark">(free)</span>}
+              #{b.order} — {b.name} {b.isFree && <span className="text-xs text-brand-dark">(free)</span>}
+              {b.badge !== "none" && <span className="text-xs text-brand-dark ml-1">[{b.badge}]</span>}
               {b.isHidden && <span className="text-xs text-muted-dark ml-2">(hidden)</span>}
             </div>
             <div className="flex gap-2 text-xs">
-              <button onClick={() => setEditing(b)} className="btn-outline">Edit</button>
+              <button onClick={() => setEditing(toEditable(b))} className="btn-outline">Edit</button>
               <button onClick={() => toggleHide(b._id)} className="btn-outline">{b.isHidden ? "Show" : "Hide"}</button>
               <button onClick={() => remove(b._id)} className="btn-outline text-red-400 border-red-400">Delete</button>
             </div>
@@ -65,6 +91,10 @@ export default function AdminBots() {
 
             <label className="text-xs text-muted-dark font-body block mb-1">Slug (used for the app name)</label>
             <input value={editing.slug} onChange={(e) => setEditing({ ...editing, slug: e.target.value })}
+                   className="w-full rounded-lg px-3 py-2 bg-bg-dark border border-border-dark text-sm font-body text-text-dark outline-none" />
+
+            <label className="text-xs text-muted-dark font-body block mb-1">Order (position in the Available bots list)</label>
+            <input type="number" value={editing.order} onChange={(e) => setEditing({ ...editing, order: Number(e.target.value) })}
                    className="w-full rounded-lg px-3 py-2 bg-bg-dark border border-border-dark text-sm font-body text-text-dark outline-none" />
 
             <label className="text-xs text-muted-dark font-body block mb-1">Description</label>
@@ -105,6 +135,17 @@ export default function AdminBots() {
             <div className="flex gap-4 text-sm font-body text-text-dark mb-1">
               <label className="flex items-center gap-1"><input type="checkbox" checked={editing.availableForPlans?.includes("user")} onChange={() => togglePlan("user")} /> User</label>
               <label className="flex items-center gap-1"><input type="checkbox" checked={editing.availableForPlans?.includes("deployer")} onChange={() => togglePlan("deployer")} /> Deployer</label>
+            </div>
+
+            <label className="text-xs text-muted-dark font-body block mb-1">
+              Available deployment platforms (leave all unchecked to allow every platform)
+            </label>
+            <div className="flex flex-col gap-1 text-sm font-body text-text-dark mb-1 max-h-32 overflow-y-auto">
+              {platforms.map((p) => (
+                <label key={p._id} className="flex items-center gap-1">
+                  <input type="checkbox" checked={editing.platforms?.includes(p._id)} onChange={() => togglePlatform(p._id)} /> {p.name}
+                </label>
+              ))}
             </div>
 
             <label className="text-xs text-muted-dark font-body block mb-1">Badge</label>
