@@ -1,17 +1,19 @@
 import { useEffect, useState } from "react";
 import api from "../../api/client";
 import AdminCrudSection from "../../components/admin/AdminCrudSection";
+import { useConfirm } from "../../context/ConfirmContext";
 
 export default function AdminDeployment() {
   const [deployments, setDeployments] = useState([]);
   const [tab, setTab] = useState("live"); // "live" | "platforms" | "music"
+  const confirm = useConfirm();
 
   useEffect(() => {
     if (tab === "live") api.get("/deployment/admin/all").then((r) => setDeployments(r.data)).catch(() => {});
   }, [tab]);
 
   async function removeDeployment(id) {
-    if (!confirm("Delete this deployment? This calls the hosting platform's API to remove it too.")) return;
+    if (!(await confirm("Delete this deployment? This calls the hosting platform's API to remove it too, and removes it from the database permanently."))) return;
     await api.delete(`/deployment/admin/${id}`);
     const { data } = await api.get("/deployment/admin/all");
     setDeployments(data);
@@ -48,9 +50,13 @@ export default function AdminDeployment() {
 
       {tab === "platforms" && (
         <AdminCrudSection title="Deployment platforms" endpoint="/deployment-platforms"
-          fields={[{ key: "name", label: "Name" }, { key: "icon", label: "Icon key" },
-                   { key: "apiIdentifier", label: "API identifier (heroku/railway/render/other)" },
-                   { key: "badge", label: "Badge (none/recommended/slow/issues)" }]} />
+          fields={[{ key: "name", label: "Name" }, { key: "icon", label: "Icon", type: "icon" },
+                   { key: "apiIdentifier", label: "API identifier", type: "select", options: [
+                       { value: "heroku", label: "Heroku" }, { value: "railway", label: "Railway" },
+                       { value: "render", label: "Render" }, { value: "other", label: "Other (manual deploy only)" }] },
+                   { key: "badge", label: "Badge", type: "select", options: [
+                       { value: "none", label: "None" }, { value: "recommended", label: "Recommended" },
+                       { value: "slow", label: "Slow / busy" }, { value: "issues", label: "Has issues" }] }]} />
       )}
 
       {tab === "music" && (
