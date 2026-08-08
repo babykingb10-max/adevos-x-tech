@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import api from "../../api/client";
 import { ICON_OPTIONS, getIcon } from "../../lib/icons";
 import { ALL_DESTINATIONS } from "../../lib/destinations";
+import { useConfirm } from "../../context/ConfirmContext";
 
 // Reusable admin panel for any endpoint built with the backend's crudRouter.
 // `fields` describes the form inputs. Each field: { key, label, type }
@@ -10,6 +11,7 @@ export default function AdminCrudSection({ title, endpoint, fields }) {
   const [items, setItems] = useState([]);
   const [editing, setEditing] = useState(null);
   const [loading, setLoading] = useState(true);
+  const confirm = useConfirm();
 
   async function load() {
     setLoading(true);
@@ -28,7 +30,7 @@ export default function AdminCrudSection({ title, endpoint, fields }) {
   }
 
   async function toggleHide(id) { await api.patch(`${endpoint}/${id}/hide`); load(); }
-  async function remove(id) { if (confirm("Delete this item?")) { await api.delete(`${endpoint}/${id}`); load(); } }
+  async function remove(id) { if (await confirm("Delete this item?")) { await api.delete(`${endpoint}/${id}`); load(); } }
 
   return (
     <div>

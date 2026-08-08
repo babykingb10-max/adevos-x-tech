@@ -97,8 +97,10 @@ UpdateReadReceiptSchema.index({ user: 1, update: 1 }, { unique: true });
 const TutorialSchema = new mongoose.Schema(
   {
     title: { type: String, required: true },
+    description: { type: String, default: "" },
     icon: { type: String, default: "graduation-cap" },
-    videoUrl: { type: String, required: true },
+    videoUrl: { type: String, default: "" },
+    youtubeUrl: { type: String, default: "" },
     order: { type: Number, default: 0 },
     isHidden: { type: Boolean, default: false },
   },

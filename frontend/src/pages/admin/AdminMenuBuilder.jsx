@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../../api/client";
+import { useConfirm } from "../../context/ConfirmContext";
 
 const emptyItem = () => ({ label: "", icon: "", destination: "", subItems: [], order: 0 });
 const emptySub = () => ({ label: "", icon: "", destination: "", order: 0 });
@@ -7,6 +8,7 @@ const emptySub = () => ({ label: "", icon: "", destination: "", order: 0 });
 export default function AdminMenuBuilder() {
   const [items, setItems] = useState([]);
   const [editing, setEditing] = useState(null);
+  const confirm = useConfirm();
 
   async function load() { const { data } = await api.get("/menu-items/admin/all"); setItems(data); }
   useEffect(() => { load(); }, []);
@@ -20,7 +22,7 @@ export default function AdminMenuBuilder() {
   }
 
   async function toggleHide(id) { await api.patch(`/menu-items/${id}/hide`); load(); }
-  async function remove(id) { if (confirm("Delete this menu item?")) { await api.delete(`/menu-items/${id}`); load(); } }
+  async function remove(id) { if (await confirm("Delete this menu item?")) { await api.delete(`/menu-items/${id}`); load(); } }
 
   function updateSub(idx, field, value) {
     const subItems = [...editing.subItems];

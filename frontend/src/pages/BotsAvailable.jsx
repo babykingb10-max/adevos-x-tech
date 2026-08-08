@@ -56,8 +56,8 @@ export default function BotsAvailable() {
                 <span className="absolute top-2 left-2 bg-black/70 text-yellow-400 text-xs px-2 py-0.5 rounded flex items-center gap-1 font-body">
                   <Star size={12} fill="currentColor" /> {bot.ratingAverage?.toFixed(1) || "0.0"}
                 </span>
-                {bot.badge === "popular" && (
-                  <span className="absolute top-2 right-2 bg-brand-dark text-bg-dark text-xs px-2 py-0.5 rounded font-body">Popular</span>
+                {bot.badge && bot.badge !== "none" && (
+                  <span className="absolute top-2 right-2 bg-brand-dark text-bg-dark text-xs px-2 py-0.5 rounded font-body capitalize">{bot.badge}</span>
                 )}
                 <button onClick={() => handleDeploy(bot._id)} className="absolute bottom-2 left-2 btn-primary text-xs">Deploy</button>
                 <a href={bot.githubRepoUrl} target="_blank" rel="noreferrer" className="absolute bottom-2 right-2 btn-outline text-xs bg-black/40 text-white border-white/40">Source</a>

@@ -12,7 +12,9 @@ import AdminResponses from "./AdminResponses";
 import AdminSupport from "./AdminSupport";
 import AdminMenuBuilder from "./AdminMenuBuilder";
 import AdminBots from "./AdminBots";
+import AdminTutorials from "./AdminTutorials";
 import AdminDashboard from "./AdminDashboard";
+import { BackButton, ScrollToTopButton } from "../../components/ui/NavHelpers";
 
 const NAV = [
   { path: "", label: "Dashboard" },
@@ -26,6 +28,7 @@ const NAV = [
   { path: "menu", label: "Menu" },
   { path: "plans", label: "Plans" },
   { path: "bots", label: "Bots" },
+  { path: "tutorials", label: "Tutorials" },
   { path: "payment", label: "Payment" },
   { path: "deployment", label: "Deployment" },
   { path: "av", label: "AV" },
@@ -83,7 +86,6 @@ export default function AdminApp() {
         </div>
       )}
 
-     
       <main className="flex-1 p-6 pt-20 md:pt-6 overflow-y-auto overflow-x-hidden min-w-0">
         <Routes>
           <Route path="/" element={<AdminDashboard />} />
@@ -125,6 +127,7 @@ export default function AdminApp() {
                        { key: "heading", label: "Heading" }, { key: "description", label: "Description", type: "textarea" }]} />
           } />
           <Route path="bots" element={<AdminBots />} />
+          <Route path="tutorials" element={<AdminTutorials />} />
           <Route path="payment/*" element={<AdminPayments />} />
           <Route path="deployment/*" element={<AdminDeployment />} />
           <Route path="av" element={<AdminAV />} />
@@ -136,6 +139,8 @@ export default function AdminApp() {
           <Route path="responses" element={<AdminResponses />} />
         </Routes>
       </main>
+      <BackButton />
+      <ScrollToTopButton />
     </div>
   );
 }

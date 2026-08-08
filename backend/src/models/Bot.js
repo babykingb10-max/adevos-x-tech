@@ -26,6 +26,10 @@ const BotSchema = new mongoose.Schema(
       default: ["user", "deployer"],
     },
 
+    // If set, only these platforms are offered on the Deployment page for
+    // this bot. If empty, ALL active platforms are offered (default behavior).
+    platforms: [{ type: mongoose.Schema.Types.ObjectId, ref: "DeploymentPlatform" }],
+
     order: { type: Number, default: 0 },
     isHidden: { type: Boolean, default: false },
   },

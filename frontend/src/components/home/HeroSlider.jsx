@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import api from "../../api/client";
 import Heading from "../ui/Heading";
 import { usePopup } from "../../context/PopupContext";
@@ -8,6 +8,7 @@ export default function HeroSlider() {
   const [slides, setSlides] = useState([]);
   const [active, setActive] = useState(0);
   const { open } = usePopup();
+  const navigate = useNavigate();
 
   useEffect(() => {
     api.get("/hero-slides").then((res) => setSlides(res.data)).catch(() => {});
@@ -22,7 +23,13 @@ export default function HeroSlider() {
   if (!slides.length) return null;
   const slide = slides[active];
   const isPopup = slide.actionType === "internal" && slide.actionTarget.startsWith("popup:");
+  const isHashAnchor = slide.actionType === "internal" && slide.actionTarget.startsWith("#");
   const isExternal = slide.actionType === "external";
+
+  function handleHashClick() {
+    navigate("/");
+    setTimeout(() => document.querySelector(slide.actionTarget)?.scrollIntoView({ behavior: "smooth" }), 300);
+  }
 
   return (
     <section className="relative overflow-hidden rounded-2xl mx-4 mt-4">
@@ -35,6 +42,8 @@ export default function HeroSlider() {
           <a href={slide.actionTarget} target="_blank" rel="noreferrer" className="btn-primary inline-block mt-4 w-fit">{slide.buttonLabel}</a>
         ) : isPopup ? (
           <button onClick={() => open(slide.actionTarget)} className="btn-primary inline-block mt-4 w-fit">{slide.buttonLabel}</button>
+        ) : isHashAnchor ? (
+          <button onClick={handleHashClick} className="btn-primary inline-block mt-4 w-fit">{slide.buttonLabel}</button>
         ) : (
           <Link to={slide.actionTarget} className="btn-primary inline-block mt-4 w-fit">{slide.buttonLabel}</Link>
         )}

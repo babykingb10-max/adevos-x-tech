@@ -43,9 +43,18 @@ export function InTouchSection() {
   function handleClick(c) {
     if (c.actionTarget === "smart:deploy") {
       resolveSmartDeploy({ user, navigate, openPopup });
-    } else {
-      openPopup(c.actionTarget);
+      return;
     }
+    if (c.actionType === "contact") {
+      const target = c.actionTarget || "";
+      if (/^https?:\/\//i.test(target) || target.startsWith("wa.me") || target.startsWith("www.")) {
+        window.open(target.startsWith("http") ? target : `https://${target}`, "_blank");
+      } else {
+        window.location.href = `mailto:${target}`;
+      }
+      return;
+    }
+    openPopup(c.actionTarget);
   }
 
   return (

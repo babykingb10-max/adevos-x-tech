@@ -1,22 +1,25 @@
 import { useEffect, useState } from "react";
 import api from "../../api/client";
+import { useConfirm } from "../../context/ConfirmContext";
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
   const [selected, setSelected] = useState([]);
   const [bulkAmount, setBulkAmount] = useState("");
   const [grantForm, setGrantForm] = useState(null); // { userId, plan, durationWeeks }
+  const [coinsForm, setCoinsForm] = useState(null); // { userId, amount }
+  const confirm = useConfirm();
 
   async function load() { const { data } = await api.get("/users"); setUsers(data); }
   useEffect(() => { load(); }, []);
 
   async function toggleBlock(id) { await api.patch(`/users/${id}/block`); load(); }
-  async function remove(id) { if (confirm("Remove this user?")) { await api.delete(`/users/${id}`); load(); } }
+  async function remove(id) { if (await confirm("Remove this user? This cannot be undone.")) { await api.delete(`/users/${id}`); load(); } }
 
-  async function adjustCoins(id) {
-    const amount = prompt("Amount to add (use a negative number to deduct):");
-    if (amount === null || amount === "") return;
-    await api.patch(`/users/${id}/coins`, { amount: Number(amount) });
+  async function submitCoins(e) {
+    e.preventDefault();
+    await api.patch(`/users/${coinsForm.userId}/coins`, { amount: Number(coinsForm.amount) });
+    setCoinsForm(null);
     load();
   }
 
@@ -80,7 +83,7 @@ export default function AdminUsers() {
                 <td className="p-2">{u.coins}</td>
                 <td className="p-2 flex flex-wrap gap-2">
                   <button onClick={() => setGrantForm({ userId: u._id, plan: "user", durationWeeks: 2 })} className="btn-outline text-xs">Grant plan</button>
-                  <button onClick={() => adjustCoins(u._id)} className="btn-outline text-xs">Adjust coins</button>
+                  <button onClick={() => setCoinsForm({ userId: u._id, amount: "" })} className="btn-outline text-xs">Adjust coins</button>
                   <button onClick={() => toggleBlock(u._id)} className="btn-outline text-xs">{u.isBlocked ? "Unblock" : "Block"}</button>
                   <button onClick={() => remove(u._id)} className="btn-outline text-xs text-red-400 border-red-400">Remove</button>
                 </td>
@@ -113,6 +116,21 @@ export default function AdminUsers() {
             <div className="flex gap-2 pt-2">
               <button type="submit" className="btn-primary flex-1">Grant</button>
               <button type="button" onClick={() => setGrantForm(null)} className="btn-outline flex-1">Cancel</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {coinsForm && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <form onSubmit={submitCoins} className="card bg-surface-dark border-border-dark p-6 w-full max-w-sm space-y-3">
+            <h3 className="heading text-lg mb-2">Adjust AV Coins</h3>
+            <label className="text-xs text-muted-dark font-body block mb-1">Amount (use a negative number to deduct)</label>
+            <input type="number" autoFocus value={coinsForm.amount} onChange={(e) => setCoinsForm({ ...coinsForm, amount: e.target.value })}
+                   className="w-full rounded-lg px-3 py-2 bg-bg-dark border border-border-dark text-sm font-body text-text-dark outline-none" />
+            <div className="flex gap-2 pt-2">
+              <button type="submit" className="btn-primary flex-1">Apply</button>
+              <button type="button" onClick={() => setCoinsForm(null)} className="btn-outline flex-1">Cancel</button>
             </div>
           </form>
         </div>
