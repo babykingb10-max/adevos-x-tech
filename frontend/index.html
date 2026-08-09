@@ -5,15 +5,76 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Adevos-X Tech</title>
     <meta name="description" content="Deploy WhatsApp and Telegram bots, AI solutions, and web development — powered by Adevos-X Tech." />
+
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#0A0F0D" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Adevos-X Tech" />
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
+
+    <style>
+      /* Pure CSS/HTML splash shown instantly on cold load/refresh, before the
+         JS bundle even executes — removed by main.jsx once React has mounted
+         and the first route's data is ready. Keeps the "Initializing..."
+         moment branded instead of a blank white/black flash. */
+      #initial-splash {
+        position: fixed; inset: 0; z-index: 9999;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        background: #0A0F0D;
+        transition: opacity 0.4s ease;
+      }
+      #initial-splash .ring-wrap {
+        position: relative; width: 96px; height: 96px; margin-bottom: 20px;
+      }
+      #initial-splash .ring {
+        position: absolute; inset: 0; border-radius: 50%;
+        border: 3px solid rgba(0,230,140,0.15);
+        border-top-color: #00E68C;
+        animation: adevos-spin 1s linear infinite;
+      }
+      #initial-splash img {
+        position: absolute; inset: 14px; width: 68px; height: 68px; border-radius: 50%;
+      }
+      #initial-splash p {
+        font-family: Rajdhani, sans-serif; color: #00E68C; font-weight: 600;
+        letter-spacing: 0.05em; font-size: 15px; margin: 0;
+      }
+      @keyframes adevos-spin { to { transform: rotate(360deg); } }
+      #initial-splash.hide { opacity: 0; pointer-events: none; }
+    </style>
   </head>
   <body>
+    <div id="initial-splash">
+      <div class="ring-wrap">
+        <div class="ring"></div>
+        <img src="/icons/icon-192.png" alt="Adevos-X Tech" />
+      </div>
+      <p>Adevos-X Tech Initializing...</p>
+    </div>
+
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    <script>
+      window.addEventListener("load", function () {
+        setTimeout(function () {
+          var el = document.getElementById("initial-splash");
+          if (el) {
+            el.classList.add("hide");
+            setTimeout(function () { el.remove(); }, 450);
+          }
+        }, 500);
+      });
+    </script>
   </body>
 </html>
