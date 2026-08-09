@@ -3,16 +3,18 @@ import { Link, useNavigate } from "react-router-dom";
 import api from "../../api/client";
 import Heading from "../ui/Heading";
 import { usePopup } from "../../context/PopupContext";
+import { useContentRefresh } from "../../context/SocketContext";
 
 export default function HeroSlider() {
   const [slides, setSlides] = useState([]);
   const [active, setActive] = useState(0);
   const { open } = usePopup();
   const navigate = useNavigate();
+  const refresh = useContentRefresh("hero-slides");
 
   useEffect(() => {
     api.get("/hero-slides").then((res) => setSlides(res.data)).catch(() => {});
-  }, []);
+  }, [refresh]);
 
   useEffect(() => {
     if (slides.length < 2) return;
