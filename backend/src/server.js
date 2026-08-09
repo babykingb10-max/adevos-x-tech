@@ -65,23 +65,24 @@ app.use("/api/upload", require("./routes/upload.routes"));
 app.use("/api/newsletter", require("./routes/newsletter.routes"));
 
 /* ---------------- Generic content routers (Admin-managed simple content) ---------------- */
-app.use("/api/hero-slides", crudRouter(HeroSlide));
-app.use("/api/services", crudRouter(Service));
-app.use("/api/in-touch", crudRouter(InTouchCard));
-app.use("/api/plans", crudRouter(Plan));
-app.use("/api/testimonials", crudRouter(Testimonial));
-app.use("/api/stay-connected", crudRouter(StayConnectedLink));
-app.use("/api/footer-links", crudRouter(FooterLink));
-app.use("/api/menu-items", crudRouter(MenuItem));
-app.use("/api/tutorials", crudRouter(Tutorial));
-app.use("/api/banners", crudRouter(Banner));
-app.use("/api/payment-methods", crudRouter(PaymentMethod));
-app.use("/api/packages", crudRouter(Package));
-app.use("/api/deployment-platforms", crudRouter(DeploymentPlatform));
-app.use("/api/deployment-music", crudRouter(DeploymentMusic));
+app.use("/api/hero-slides", crudRouter(HeroSlide, { contentType: "hero-slides" }));
+app.use("/api/services", crudRouter(Service, { contentType: "services" }));
+app.use("/api/in-touch", crudRouter(InTouchCard, { contentType: "in-touch" }));
+app.use("/api/plans", crudRouter(Plan, { contentType: "plans" }));
+app.use("/api/testimonials", crudRouter(Testimonial, { contentType: "testimonials" }));
+app.use("/api/stay-connected", crudRouter(StayConnectedLink, { contentType: "stay-connected" }));
+app.use("/api/footer-links", crudRouter(FooterLink, { contentType: "footer-links" }));
+app.use("/api/menu-items", crudRouter(MenuItem, { contentType: "menu-items" }));
+app.use("/api/tutorials", crudRouter(Tutorial, { contentType: "tutorials" }));
+app.use("/api/banners", crudRouter(Banner, { contentType: "banners" }));
+app.use("/api/payment-methods", crudRouter(PaymentMethod, { contentType: "payment-methods" }));
+app.use("/api/packages", crudRouter(Package, { contentType: "packages" }));
+app.use("/api/deployment-platforms", crudRouter(DeploymentPlatform, { contentType: "deployment-platforms" }));
+app.use("/api/deployment-music", crudRouter(DeploymentMusic, { contentType: "deployment-music" }));
 
 /* ---------------- Support (single-document content) ---------------- */
 const { protect, adminOnly } = require("./middleware/auth");
+const { broadcastContentChange } = require("./utils/liveEvents");
 app.get("/api/support", async (req, res) => {
   const support = await Support.findOne();
   res.json(support || {});
@@ -91,6 +92,7 @@ app.put("/api/support", protect, adminOnly, async (req, res) => {
   Object.assign(support, req.body);
   await support.save();
   res.json(support);
+  broadcastContentChange(req.app, "support");
 });
 
 /* ---------------- 404 + error handler ---------------- */
