@@ -5,7 +5,11 @@ const DeploymentPlatformSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, unique: true },
     icon: { type: String, required: true },
-    apiIdentifier: { type: String, enum: ["heroku", "railway", "render", "other"], required: true },
+    apiIdentifier: {
+      type: String,
+      enum: ["heroku", "railway", "render", "flyio", "koyeb", "pterodactyl", "replit", "other"],
+      required: true,
+    },
     badge: { type: String, enum: ["none", "recommended", "slow", "issues"], default: "none" },
     // Naming rules used to auto-generate valid app names on this platform
     appNameRules: {
