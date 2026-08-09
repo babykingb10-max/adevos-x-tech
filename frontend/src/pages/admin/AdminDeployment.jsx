@@ -53,7 +53,9 @@ export default function AdminDeployment() {
           fields={[{ key: "name", label: "Name" }, { key: "icon", label: "Icon", type: "icon" },
                    { key: "apiIdentifier", label: "API identifier", type: "select", options: [
                        { value: "heroku", label: "Heroku" }, { value: "railway", label: "Railway" },
-                       { value: "render", label: "Render" }, { value: "other", label: "Other (manual deploy only)" }] },
+                       { value: "render", label: "Render" }, { value: "flyio", label: "Fly.io" },
+                       { value: "koyeb", label: "Koyeb" }, { value: "pterodactyl", label: "Pterodactyl Panel" },
+                       { value: "replit", label: "Replit" }, { value: "other", label: "Other (manual deploy only)" }] },
                    { key: "badge", label: "Badge", type: "select", options: [
                        { value: "none", label: "None" }, { value: "recommended", label: "Recommended" },
                        { value: "slow", label: "Slow / busy" }, { value: "issues", label: "Has issues" }] }]} />
