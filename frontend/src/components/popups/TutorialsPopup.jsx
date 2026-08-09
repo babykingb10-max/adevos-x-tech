@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import api from "../../api/client";
 import Modal from "../ui/Modal";
 import { getIcon } from "../../lib/icons";
+import { useContentRefresh } from "../../context/SocketContext";
 
 // Converts a normal YouTube watch/share URL into an embeddable URL.
 function toYoutubeEmbed(url) {
@@ -19,8 +20,9 @@ function toYoutubeEmbed(url) {
 export default function TutorialsPopup({ onClose }) {
   const [tutorials, setTutorials] = useState([]);
   const [playing, setPlaying] = useState(null);
+  const refresh = useContentRefresh("tutorials");
 
-  useEffect(() => { api.get("/tutorials").then((r) => setTutorials(r.data)).catch(() => {}); }, []);
+  useEffect(() => { api.get("/tutorials").then((r) => setTutorials(r.data)).catch(() => {}); }, [refresh]);
 
   if (playing) {
     return (
