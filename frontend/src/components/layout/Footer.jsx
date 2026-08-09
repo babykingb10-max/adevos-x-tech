@@ -2,15 +2,17 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Heading from "../ui/Heading";
 import api from "../../api/client";
+import { useContentRefresh } from "../../context/SocketContext";
 
 const GROUP_LABELS = { services: "Services", company: "Company", legal: "Legal", resources: "Resources" };
 
 export default function Footer() {
   const [links, setLinks] = useState([]);
+  const refresh = useContentRefresh("footer-links");
 
   useEffect(() => {
     api.get("/footer-links").then((res) => setLinks(res.data)).catch(() => {});
-  }, []);
+  }, [refresh]);
 
   const byGroup = Object.keys(GROUP_LABELS).map((group) => ({
     group,

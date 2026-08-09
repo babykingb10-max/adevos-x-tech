@@ -1,6 +1,7 @@
 const express = require("express");
 const { Bot, BotRating } = require("../models/Bot");
 const { protect, adminOnly } = require("../middleware/auth");
+const { broadcastContentChange } = require("../utils/liveEvents");
 
 const router = express.Router();
 
@@ -47,12 +48,15 @@ router.get("/admin/all", protect, adminOnly, async (req, res) => {
   res.json(await Bot.find().populate("platforms").sort({ order: 1 }));
 });
 router.post("/", protect, adminOnly, async (req, res) => {
-  res.status(201).json(await Bot.create(req.body));
+  const bot = await Bot.create(req.body);
+  res.status(201).json(bot);
+  broadcastContentChange(req.app, "bots");
 });
 router.put("/:id", protect, adminOnly, async (req, res) => {
   const bot = await Bot.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
   if (!bot) return res.status(404).json({ message: "Not found" });
   res.json(bot);
+  broadcastContentChange(req.app, "bots");
 });
 router.patch("/:id/hide", protect, adminOnly, async (req, res) => {
   const bot = await Bot.findById(req.params.id);
@@ -60,11 +64,13 @@ router.patch("/:id/hide", protect, adminOnly, async (req, res) => {
   bot.isHidden = !bot.isHidden;
   await bot.save();
   res.json(bot);
+  broadcastContentChange(req.app, "bots");
 });
 router.delete("/:id", protect, adminOnly, async (req, res) => {
   const bot = await Bot.findByIdAndDelete(req.params.id);
   if (!bot) return res.status(404).json({ message: "Not found" });
   res.json({ message: "Deleted" });
+  broadcastContentChange(req.app, "bots");
 });
 
 module.exports = router;

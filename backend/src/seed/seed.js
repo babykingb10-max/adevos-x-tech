@@ -169,11 +169,26 @@ async function seed() {
     { plan: "deployer", durationWeeks: 8, priceUSD: 26, order: 3 },
   ], "Package");
 
-  await seedIfEmpty(DeploymentPlatform, [
+  // DeploymentPlatform gets its own upsert-by-apiIdentifier logic (rather than
+  // the usual "skip if collection has anything") so newly-added platforms
+  // (like Fly.io/Koyeb/Pterodactyl/Replit added in a later update) still get
+  // created even though you already have Heroku/Railway/Render seeded.
+  const defaultPlatforms = [
     { name: "Heroku", icon: "cloud-upload", apiIdentifier: "heroku", badge: "recommended", order: 1 },
     { name: "Railway", icon: "bolt", apiIdentifier: "railway", badge: "none", order: 2 },
     { name: "Render", icon: "rocket", apiIdentifier: "render", badge: "slow", order: 3 },
-  ], "DeploymentPlatform");
+    { name: "Fly.io", icon: "cloud-upload", apiIdentifier: "flyio", badge: "none", order: 4 },
+    { name: "Koyeb", icon: "bolt", apiIdentifier: "koyeb", badge: "none", order: 5 },
+    { name: "Pterodactyl Panel", icon: "settings", apiIdentifier: "pterodactyl", badge: "none", order: 6 },
+    { name: "Replit", icon: "code", apiIdentifier: "replit", badge: "issues", order: 7 },
+  ];
+  for (const p of defaultPlatforms) {
+    const exists = await DeploymentPlatform.findOne({ apiIdentifier: p.apiIdentifier });
+    if (!exists) {
+      await DeploymentPlatform.create(p);
+      console.log(`[seed] DeploymentPlatform: added missing "${p.name}".`);
+    }
+  }
 
   await seedIfEmpty(DeploymentMusic, [
     { title: "Lo-Fi Focus", artist: "Adevos Beats", url: "https://example.com/audio/lofi-focus.mp3", order: 1 },

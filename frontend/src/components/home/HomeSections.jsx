@@ -6,11 +6,13 @@ import { getIcon } from "../../lib/icons";
 import { useAuth } from "../../context/AuthContext";
 import { usePopup } from "../../context/PopupContext";
 import { resolveSmartDeploy } from "../../lib/smartDeploy";
+import { useContentRefresh } from "../../context/SocketContext";
 
 /* ---------------- Our Services ---------------- */
 export function ServicesSection() {
   const [services, setServices] = useState([]);
-  useEffect(() => { api.get("/services").then((r) => setServices(r.data)).catch(() => {}); }, []);
+  const refresh = useContentRefresh("services");
+  useEffect(() => { api.get("/services").then((r) => setServices(r.data)).catch(() => {}); }, [refresh]);
 
   return (
     <section className="py-12 px-4">
@@ -38,7 +40,8 @@ export function InTouchSection() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { open: openPopup } = usePopup();
-  useEffect(() => { api.get("/in-touch").then((r) => setCards(r.data)).catch(() => {}); }, []);
+  const refresh = useContentRefresh("in-touch");
+  useEffect(() => { api.get("/in-touch").then((r) => setCards(r.data)).catch(() => {}); }, [refresh]);
 
   function handleClick(c) {
     if (c.actionTarget === "smart:deploy") {
@@ -80,7 +83,8 @@ export function InTouchSection() {
 /* ---------------- Support ---------------- */
 export function SupportSection() {
   const [support, setSupport] = useState(null);
-  useEffect(() => { api.get("/support").then((r) => setSupport(r.data)).catch(() => {}); }, []);
+  const refresh = useContentRefresh("support");
+  useEffect(() => { api.get("/support").then((r) => setSupport(r.data)).catch(() => {}); }, [refresh]);
   if (!support?.description) return null;
 
   return (
@@ -107,7 +111,8 @@ export function SupportSection() {
 /* ---------------- Client feedback ---------------- */
 export function TestimonialsSection() {
   const [items, setItems] = useState([]);
-  useEffect(() => { api.get("/testimonials").then((r) => setItems(r.data)).catch(() => {}); }, []);
+  const refresh = useContentRefresh("testimonials");
+  useEffect(() => { api.get("/testimonials").then((r) => setItems(r.data)).catch(() => {}); }, [refresh]);
   if (!items.length) return null;
 
   return (
@@ -130,7 +135,8 @@ export function StayConnectedSection() {
   const [links, setLinks] = useState([]);
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState(null); // null | "sent" | "error"
-  useEffect(() => { api.get("/stay-connected").then((r) => setLinks(r.data)).catch(() => {}); }, []);
+  const refresh = useContentRefresh("stay-connected");
+  useEffect(() => { api.get("/stay-connected").then((r) => setLinks(r.data)).catch(() => {}); }, [refresh]);
 
   async function handleSubscribe(e) {
     e.preventDefault();

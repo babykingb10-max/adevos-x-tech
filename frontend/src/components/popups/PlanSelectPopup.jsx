@@ -2,12 +2,14 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/client";
 import Modal from "../ui/Modal";
+import { useContentRefresh } from "../../context/SocketContext";
 
 export default function PlanSelectPopup({ onClose }) {
   const [plans, setPlans] = useState([]);
   const navigate = useNavigate();
+  const refresh = useContentRefresh("plans");
 
-  useEffect(() => { api.get("/plans").then((r) => setPlans(r.data)).catch(() => {}); }, []);
+  useEffect(() => { api.get("/plans").then((r) => setPlans(r.data)).catch(() => {}); }, [refresh]);
 
   function choose(planKey) {
     onClose();

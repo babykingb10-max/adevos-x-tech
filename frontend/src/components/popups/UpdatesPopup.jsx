@@ -2,12 +2,14 @@ import { useEffect, useState } from "react";
 import api from "../../api/client";
 import Modal from "../ui/Modal";
 import { useAuth } from "../../context/AuthContext";
+import { useContentRefresh } from "../../context/SocketContext";
 
 export default function UpdatesPopup({ onClose }) {
   const [updates, setUpdates] = useState([]);
   const { user } = useAuth();
+  const refresh = useContentRefresh("updates");
 
-  useEffect(() => { api.get("/updates").then((r) => setUpdates(r.data)).catch(() => {}); }, []);
+  useEffect(() => { api.get("/updates").then((r) => setUpdates(r.data)).catch(() => {}); }, [refresh]);
 
   async function markOneRead(id) {
     if (user) await api.post(`/updates/${id}/read`);

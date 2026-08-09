@@ -4,6 +4,7 @@ import { Star } from "lucide-react";
 import api from "../api/client";
 import Heading from "../components/ui/Heading";
 import { useAuth } from "../context/AuthContext";
+import { useContentRefresh } from "../context/SocketContext";
 
 export default function BotsAvailable() {
   const [params] = useSearchParams();
@@ -11,10 +12,11 @@ export default function BotsAvailable() {
   const [bots, setBots] = useState([]);
   const navigate = useNavigate();
   const { user } = useAuth();
+  const refresh = useContentRefresh("bots");
 
   useEffect(() => {
     api.get(`/bots?plan=${plan}`).then((r) => setBots(r.data)).catch(() => {});
-  }, [plan]);
+  }, [plan, refresh]);
 
   function handleDeploy(botId) {
     const hasValidPackage =

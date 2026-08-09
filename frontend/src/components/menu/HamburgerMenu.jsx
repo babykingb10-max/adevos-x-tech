@@ -6,6 +6,7 @@ import { useAuth } from "../../context/AuthContext";
 import { usePopup } from "../../context/PopupContext";
 import { getIcon } from "../../lib/icons";
 import { resolveSmartDeploy } from "../../lib/smartDeploy";
+import { useContentRefresh } from "../../context/SocketContext";
 
 export default function HamburgerMenu({ open, onClose }) {
   const [items, setItems] = useState([]);
@@ -15,10 +16,11 @@ export default function HamburgerMenu({ open, onClose }) {
   const { user } = useAuth();
   const { open: openPopup } = usePopup();
   const navigate = useNavigate();
+  const refresh = useContentRefresh("menu-items");
 
   useEffect(() => {
     api.get("/menu-items").then((res) => setItems(res.data)).catch(() => {});
-  }, []);
+  }, [refresh]);
 
   useEffect(() => {
     if (!user) return setUnread(0);

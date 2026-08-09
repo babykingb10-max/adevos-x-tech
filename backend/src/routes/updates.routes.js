@@ -1,6 +1,7 @@
 const express = require("express");
 const { Update, UpdateReadReceipt } = require("../models");
 const { protect, adminOnly, optionalAuth } = require("../middleware/auth");
+const { broadcastContentChange } = require("../utils/liveEvents");
 
 const router = express.Router();
 
@@ -48,12 +49,15 @@ router.get("/admin/all", protect, adminOnly, async (req, res) => {
   res.json(await Update.find().sort({ createdAt: -1 }));
 });
 router.post("/", protect, adminOnly, async (req, res) => {
-  res.status(201).json(await Update.create(req.body));
+  const u = await Update.create(req.body);
+  res.status(201).json(u);
+  broadcastContentChange(req.app, "updates");
 });
 router.put("/:id", protect, adminOnly, async (req, res) => {
   const u = await Update.findByIdAndUpdate(req.params.id, req.body, { new: true });
   if (!u) return res.status(404).json({ message: "Not found" });
   res.json(u);
+  broadcastContentChange(req.app, "updates");
 });
 router.patch("/:id/hide", protect, adminOnly, async (req, res) => {
   const u = await Update.findById(req.params.id);
@@ -61,10 +65,12 @@ router.patch("/:id/hide", protect, adminOnly, async (req, res) => {
   u.isHidden = !u.isHidden;
   await u.save();
   res.json(u);
+  broadcastContentChange(req.app, "updates");
 });
 router.delete("/:id", protect, adminOnly, async (req, res) => {
   await Update.findByIdAndDelete(req.params.id);
   res.json({ message: "Deleted" });
+  broadcastContentChange(req.app, "updates");
 });
 
 module.exports = router;
