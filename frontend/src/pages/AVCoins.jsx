@@ -42,15 +42,15 @@ export default function AVCoins() {
       <Heading as="h2" className="text-lg mb-3">Your referral link</Heading>
       <div className="card p-4">
         {referralUrl ? (
-          <>
-            <p className="text-sm font-body text-brand dark:text-brand-dark break-all mb-3">{referralUrl}</p>
-            <div className="flex gap-2">
-              <button onClick={() => navigator.clipboard.writeText(referralUrl)} className="text-xs px-3 py-1.5 rounded-full btn-outline">Copy</button>
-              <button onClick={() => navigator.share?.({ url: referralUrl })} className="text-xs px-3 py-1.5 rounded-full btn-outline">Share</button>
+          <div className="flex gap-2">
+            <div className="flex-1 min-w-0 rounded-full px-4 py-2 bg-bg dark:bg-bg-dark border border-border dark:border-border-dark overflow-x-auto whitespace-nowrap">
+              <span className="text-sm font-body text-brand dark:text-brand-dark">{referralUrl}</span>
             </div>
-          </>
+            <button onClick={() => navigator.clipboard.writeText(referralUrl)} className="text-xs px-3 py-1.5 rounded-full btn-outline shrink-0">Copy</button>
+            <button onClick={() => navigator.share?.({ url: referralUrl })} className="text-xs px-3 py-1.5 rounded-full btn-outline shrink-0">Share</button>
+          </div>
         ) : (
-          <button onClick={generateReferral} className="text-sm px-4 py-2 rounded-full btn-primary">Generate referral link</button>
+          <button onClick={generateReferral} className="text-sm px-4 py-2 rounded-full btn-primary">Generate</button>
         )}
       </div>
     </div>

@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
 import { useNavigate } from "react-router-dom";
+import { Play, Pause, SkipBack, SkipForward, RotateCcw, Square } from "lucide-react";
 import api from "../api/client";
 import Heading from "../components/ui/Heading";
 import { usePopup } from "../context/PopupContext";
+import { getIcon } from "../lib/icons";
 
 export default function Deployment() {
   const [platforms, setPlatforms] = useState([]);
@@ -23,9 +25,6 @@ export default function Deployment() {
   const { open: openPopup } = usePopup();
 
   const botId = new URLSearchParams(window.location.search).get("bot");
-  // Locked once a deployment has been submitted — the form becomes read-only
-  // until it finishes (active) or fails, so the user can't change platform/
-  // owner info/session mid-build.
   const locked = Boolean(deployment) && !["failed"].includes(deployment.status);
 
   useEffect(() => {
@@ -66,10 +65,22 @@ export default function Deployment() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-10">
+      {/* Step-by-step guide — read this first */}
+      <div className="card p-4 mb-6">
+        <Heading as="h2" className="text-base mb-3">How to deploy your bot</Heading>
+        <ol className="text-sm font-body text-muted dark:text-muted-dark space-y-2 list-none">
+          <li><b className="text-text dark:text-text-dark">1.</b> Pick a hosting platform below — "Recommended" is the safest choice if you're unsure.</li>
+          <li><b className="text-text dark:text-text-dark">2.</b> Fill in the bot owner's name and phone number — used only to identify your bot, never sent to the bot itself.</li>
+          <li><b className="text-text dark:text-text-dark">3.</b> Open the pairing site, link your WhatsApp/Telegram, then copy the Session ID it gives you.</li>
+          <li><b className="text-text dark:text-text-dark">4.</b> Paste that Session ID below and press Deploy.</li>
+          <li><b className="text-text dark:text-text-dark">5.</b> Wait for the build logs to finish — don't close this page until it says "Successfully".</li>
+        </ol>
+      </div>
+
       {music.length > 0 && (
         <div className="card p-4 mb-6">
           <p className="text-xs text-muted dark:text-muted-dark font-body mb-3">
-            🎵 Play some music while your bot deploys.
+            Optional: play some music while your bot deploys. It won't affect the build.
           </p>
           <div className="flex items-center gap-3">
             <div className={`w-12 h-12 rounded-full bg-brand/20 dark:bg-brand-dark/20 border-2 border-brand dark:border-brand-dark flex items-center justify-center shrink-0 ${isPlaying ? "animate-spin" : ""}`} style={{ animationDuration: "3s" }}>
@@ -80,12 +91,19 @@ export default function Deployment() {
               <p className="text-xs text-muted dark:text-muted-dark truncate">{currentTrack?.artist}</p>
             </div>
           </div>
-          <div className="flex justify-center gap-2 text-xs mt-3">
-            <button onClick={() => setPlayingIdx((i) => (i - 1 + music.length) % music.length)} className="btn-outline">⏮ Prev</button>
-            <button onClick={() => setIsPlaying(!isPlaying)} className="btn-primary">{isPlaying ? "⏸ Pause" : "▶ Play"}</button>
-            <button onClick={() => { audioRef.current.currentTime = 0; }} className="btn-outline">↺ Replay</button>
-            <button onClick={() => setPlayingIdx((i) => (i + 1) % music.length)} className="btn-outline">⏭ Next</button>
-            <button onClick={() => setIsPlaying(false)} className="btn-outline">⏹ Stop</button>
+          <div className="flex justify-center gap-1.5 mt-3">
+            <button onClick={() => setPlayingIdx((i) => (i - 1 + music.length) % music.length)} aria-label="Previous"
+                    className="w-8 h-8 rounded-full btn-outline flex items-center justify-center p-0"><SkipBack size={14} /></button>
+            <button onClick={() => setIsPlaying(!isPlaying)} aria-label={isPlaying ? "Pause" : "Play"}
+                    className="w-8 h-8 rounded-full btn-primary flex items-center justify-center p-0">
+              {isPlaying ? <Pause size={14} /> : <Play size={14} />}
+            </button>
+            <button onClick={() => { audioRef.current.currentTime = 0; }} aria-label="Replay"
+                    className="w-8 h-8 rounded-full btn-outline flex items-center justify-center p-0"><RotateCcw size={14} /></button>
+            <button onClick={() => setPlayingIdx((i) => (i + 1) % music.length)} aria-label="Next"
+                    className="w-8 h-8 rounded-full btn-outline flex items-center justify-center p-0"><SkipForward size={14} /></button>
+            <button onClick={() => setIsPlaying(false)} aria-label="Stop"
+                    className="w-8 h-8 rounded-full btn-outline flex items-center justify-center p-0"><Square size={12} /></button>
           </div>
           <audio ref={audioRef} src={currentTrack?.url} onEnded={() => setPlayingIdx((i) => (i + 1) % music.length)} />
         </div>
@@ -93,20 +111,33 @@ export default function Deployment() {
 
       <Heading as="h2" className="text-lg text-center mb-4">Available platforms</Heading>
       {locked ? (
-        <p className="text-center text-sm font-body mb-8">{selectedPlatform?.name}</p>
+        <p className="text-center text-sm font-body mb-8 font-bold">{selectedPlatform?.name}</p>
       ) : (
-        <div className="flex gap-3 justify-center flex-wrap mb-8">
-          {platforms.map((p) => (
-            <button key={p._id} onClick={() => setPlatformId(p._id)}
-              className={`card px-4 py-3 text-sm font-body ${platformId === p._id ? "border-2 border-brand dark:border-brand-dark bg-brand/5 dark:bg-brand-dark/5" : ""}`}>
-              {p.name} {p.badge !== "none" && <span className="block text-[10px] text-brand dark:text-brand-dark">{p.badge}</span>}
-            </button>
-          ))}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-8">
+          {platforms.map((p) => {
+            const Icon = getIcon(p.icon);
+            const isSelected = platformId === p._id;
+            return (
+              <button key={p._id} onClick={() => setPlatformId(p._id)}
+                className={`card p-3 text-left ${isSelected ? "border-2 border-brand dark:border-brand-dark bg-brand/5 dark:bg-brand-dark/5" : ""}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <Icon className="text-brand dark:text-brand-dark" size={20} />
+                  {p.badge !== "none" && (
+                    <span className="text-[10px] uppercase bg-brand-dark text-bg-dark px-1.5 py-0.5 rounded font-body">{p.badge}</span>
+                  )}
+                </div>
+                <p className="text-sm font-body font-bold text-text dark:text-text-dark">{p.name}</p>
+              </button>
+            );
+          })}
         </div>
       )}
 
       <Heading as="h2" className="text-lg text-center mb-4">Bot owner information</Heading>
       <div className="card p-4 space-y-3 mb-8">
+        <p className="text-xs text-muted dark:text-muted-dark font-body">
+          1. This is only used to label your bot on our side — it is never sent into the bot's own configuration.
+        </p>
         <input placeholder="Owner Name" value={ownerName} disabled={locked} onChange={(e) => setOwnerName(e.target.value)}
                className="w-full rounded-full px-4 py-2 bg-bg dark:bg-bg-dark border border-border dark:border-border-dark text-sm font-body outline-none disabled:opacity-50" />
         <input placeholder="Owner Number" value={ownerNumber} disabled={locked} onChange={(e) => setOwnerNumber(e.target.value)}
@@ -114,20 +145,30 @@ export default function Deployment() {
       </div>
 
       <Heading as="h2" className="text-lg text-center mb-4">Device pairing / WhatsApp number pairing</Heading>
-      <div className="card p-4 flex gap-3 mb-8">
-        <a href={bot?.pairSiteUrl || "#"} target="_blank" rel="noreferrer"
-           className={`btn-outline text-xs flex-1 text-center ${!bot?.pairSiteUrl ? "opacity-40 pointer-events-none" : ""}`}>Open</a>
-        <button
-          onClick={() => bot?.pairSiteUrl && navigator.share ? navigator.share({ url: bot.pairSiteUrl, title: "Pair your device" }) : navigator.clipboard.writeText(bot?.pairSiteUrl || "")}
-          disabled={!bot?.pairSiteUrl}
-          className="btn-outline text-xs flex-1 disabled:opacity-40">Share</button>
+      <div className="card p-4 mb-8">
+        <p className="text-xs text-muted dark:text-muted-dark font-body mb-3">
+          1. Tap Open to launch the pairing site. 2. Scan or link your number there. 3. Copy the Session ID it gives you — you'll paste it below.
+        </p>
+        <div className="flex gap-3">
+          <a href={bot?.pairSiteUrl || "#"} target="_blank" rel="noreferrer"
+             className={`btn-outline text-xs flex-1 text-center ${!bot?.pairSiteUrl ? "opacity-40 pointer-events-none" : ""}`}>Open</a>
+          <button
+            onClick={() => bot?.pairSiteUrl && navigator.share ? navigator.share({ url: bot.pairSiteUrl, title: "Pair your device" }) : navigator.clipboard.writeText(bot?.pairSiteUrl || "")}
+            disabled={!bot?.pairSiteUrl}
+            className="btn-outline text-xs flex-1 disabled:opacity-40">Share</button>
+        </div>
       </div>
 
       <Heading as="h2" className="text-lg text-center mb-4">Deployment</Heading>
-      <div className="card p-4 flex gap-2 mb-6">
-        <input placeholder="Paste session ID" value={sessionId} disabled={locked} onChange={(e) => setSessionId(e.target.value)}
-               className="flex-1 rounded-full px-4 py-2 bg-bg dark:bg-bg-dark border border-border dark:border-border-dark text-sm font-body outline-none disabled:opacity-50" />
-        <button disabled={!canDeploy} onClick={handleDeploy} className="btn-primary disabled:opacity-40">Deploy</button>
+      <div className="card p-4 mb-6">
+        <p className="text-xs text-muted dark:text-muted-dark font-body mb-3">
+          1. Paste the Session ID from the pairing step. 2. Press Deploy and don't close this page until it finishes.
+        </p>
+        <div className="flex gap-2">
+          <input placeholder="Paste session ID" value={sessionId} disabled={locked} onChange={(e) => setSessionId(e.target.value)}
+                 className="flex-1 rounded-full px-4 py-2 bg-bg dark:bg-bg-dark border border-border dark:border-border-dark text-sm font-body outline-none disabled:opacity-50" />
+          <button disabled={!canDeploy} onClick={handleDeploy} className="btn-primary disabled:opacity-40">Deploy</button>
+        </div>
       </div>
 
       {deployment && (
