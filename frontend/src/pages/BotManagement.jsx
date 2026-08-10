@@ -79,23 +79,34 @@ export default function BotManagement() {
 
       {deployments.map((d) => (
         <div key={d._id} className="card p-4 mb-4">
-          <Heading as="h3" className="text-base mb-2">{d.bot?.name}</Heading>
-          <div className="text-sm font-body space-y-1 text-muted dark:text-muted-dark mb-4">
-            <p>Owner Name: {d.ownerName}</p>
-            <p>Owner Number: {d.ownerNumber}</p>
-            <p>Platform: {d.platform?.name}</p>
-            <p>Status: <span className={`font-semibold ${STATUS_COLOR[d.status]}`}>{STATUS_LABEL[d.status] || d.status}</span></p>
-            <p>Package: {d.packageDurationWeeks} weeks</p>
+          <Heading as="h3" className="text-base mb-3">{d.bot?.name}</Heading>
+
+          {/* Sub-card: Information */}
+          <div className="card p-4 mb-3">
+            <Heading as="h4" className="text-sm text-center mb-3">Information</Heading>
+            <div className="text-sm font-body space-y-1 text-muted dark:text-muted-dark">
+              <p>Owner Name: {d.ownerName}</p>
+              <p>Owner Number: {d.ownerNumber}</p>
+              <p>Platform: {d.platform?.name}</p>
+              <p>Status: <span className={`font-semibold ${STATUS_COLOR[d.status]}`}>{STATUS_LABEL[d.status] || d.status}</span></p>
+              <p>Package: {d.packageDurationWeeks} weeks</p>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <button onClick={() => refreshStatus(d._id)} className="btn-outline text-xs">Refresh status</button>
-            <button onClick={() => restart(d._id)} className="btn-outline text-xs">Restart</button>
-            <button onClick={() => openOwnerEdit(d)} className="btn-outline text-xs">Change owner information</button>
-            <button onClick={() => changePlatform(d)} className="btn-outline text-xs">Change platform</button>
-            <button onClick={() => redeploy(d)} className="btn-outline text-xs">Redeploy</button>
-            <button onClick={() => navigate(`/payment?plan=${d.plan}&bot=${d.bot._id}`)} className="btn-outline text-xs">Renew package</button>
-            <button onClick={() => stop(d._id)} className="btn-outline text-xs">Stop</button>
-            <button onClick={() => remove(d._id)} className="btn-outline text-xs text-red-500 border-red-500">Delete deployment</button>
+
+          {/* Sub-card: Actions */}
+          <div className="card p-4">
+            <Heading as="h4" className="text-sm text-center mb-3">Actions</Heading>
+            <div className="grid grid-cols-4 gap-2">
+              <button onClick={() => refreshStatus(d._id)} className="btn-outline text-[11px] px-1 py-2">Refresh status</button>
+              <button onClick={() => restart(d._id)} className="btn-outline text-[11px] px-1 py-2">Restart</button>
+              <button onClick={() => redeploy(d)} className="btn-outline text-[11px] px-1 py-2">Redeploy</button>
+              <button onClick={() => stop(d._id)} className="btn-outline text-[11px] px-1 py-2">Stop</button>
+
+              <button onClick={() => openOwnerEdit(d)} className="btn-outline text-[11px] px-1 py-2">Change info</button>
+              <button onClick={() => changePlatform(d)} className="btn-outline text-[11px] px-1 py-2">Change platform</button>
+              <button onClick={() => navigate(`/payment?plan=${d.plan}&bot=${d.bot._id}`)} className="btn-outline text-[11px] px-1 py-2">Renew Package</button>
+              <button onClick={() => remove(d._id)} className="btn-outline text-[11px] px-1 py-2 text-red-500 border-red-500">Delete bot</button>
+            </div>
           </div>
         </div>
       ))}
