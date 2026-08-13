@@ -93,17 +93,17 @@ export default function Deployment() {
           </div>
           <div className="flex justify-center gap-1.5 mt-3">
             <button onClick={() => setPlayingIdx((i) => (i - 1 + music.length) % music.length)} aria-label="Previous"
-                    className="w-8 h-8 rounded-full btn-outline flex items-center justify-center p-0"><SkipBack size={14} /></button>
+                    className="w-8 h-8 rounded-lg btn-outline flex items-center justify-center p-0"><SkipBack size={14} /></button>
             <button onClick={() => setIsPlaying(!isPlaying)} aria-label={isPlaying ? "Pause" : "Play"}
-                    className="w-8 h-8 rounded-full btn-primary flex items-center justify-center p-0">
+                    className="w-8 h-8 rounded-lg btn-primary flex items-center justify-center p-0">
               {isPlaying ? <Pause size={14} /> : <Play size={14} />}
             </button>
             <button onClick={() => { audioRef.current.currentTime = 0; }} aria-label="Replay"
-                    className="w-8 h-8 rounded-full btn-outline flex items-center justify-center p-0"><RotateCcw size={14} /></button>
+                    className="w-8 h-8 rounded-lg btn-outline flex items-center justify-center p-0"><RotateCcw size={14} /></button>
             <button onClick={() => setPlayingIdx((i) => (i + 1) % music.length)} aria-label="Next"
-                    className="w-8 h-8 rounded-full btn-outline flex items-center justify-center p-0"><SkipForward size={14} /></button>
+                    className="w-8 h-8 rounded-lg btn-outline flex items-center justify-center p-0"><SkipForward size={14} /></button>
             <button onClick={() => setIsPlaying(false)} aria-label="Stop"
-                    className="w-8 h-8 rounded-full btn-outline flex items-center justify-center p-0"><Square size={12} /></button>
+                    className="w-8 h-8 rounded-lg btn-outline flex items-center justify-center p-0"><Square size={12} /></button>
           </div>
           <audio ref={audioRef} src={currentTrack?.url} onEnded={() => setPlayingIdx((i) => (i + 1) % music.length)} />
         </div>
