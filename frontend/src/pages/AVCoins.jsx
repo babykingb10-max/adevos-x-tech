@@ -46,11 +46,11 @@ export default function AVCoins() {
             <div className="flex-1 min-w-0 rounded-full px-4 py-2 bg-bg dark:bg-bg-dark border border-border dark:border-border-dark overflow-x-auto whitespace-nowrap">
               <span className="text-sm font-body text-brand dark:text-brand-dark">{referralUrl}</span>
             </div>
-            <button onClick={() => navigator.clipboard.writeText(referralUrl)} className="text-xs px-3 py-1.5 rounded-full btn-outline shrink-0">Copy</button>
-            <button onClick={() => navigator.share?.({ url: referralUrl })} className="text-xs px-3 py-1.5 rounded-full btn-outline shrink-0">Share</button>
+            <button onClick={() => navigator.clipboard.writeText(referralUrl)} className="text-xs px-3 py-1.5 rounded-lg btn-outline shrink-0">Copy</button>
+            <button onClick={() => navigator.share?.({ url: referralUrl })} className="text-xs px-3 py-1.5 rounded-lg btn-outline shrink-0">Share</button>
           </div>
         ) : (
-          <button onClick={generateReferral} className="text-sm px-4 py-2 rounded-full btn-primary">Generate</button>
+          <button onClick={generateReferral} className="text-sm px-4 py-2 rounded-lg btn-primary">Generate</button>
         )}
       </div>
     </div>
