@@ -11,6 +11,22 @@ const { emitLiveEvent } = require("../utils/liveEvents");
 
 const router = express.Router();
 
+// Parses "M-Pesa: 0700000000, Tigo Pesa: 0710000000" (MANUAL_PAYMENT_NUMBERS env)
+// into a clean array so the frontend can render one card per number instead
+// of one long string.
+function parseManualPaymentNumbers() {
+  const raw = process.env.MANUAL_PAYMENT_NUMBERS || "";
+  const name = process.env.MANUAL_PAYMENT_NAME || "";
+  return raw
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .map((entry) => {
+      const [network, number] = entry.split(":").map((s) => s.trim());
+      return { network: network || "", number: number || entry, name };
+    });
+}
+
 /* ---------------- Public: payment methods + packages ---------------- */
 router.get("/methods", async (req, res) => {
   const { plan } = req.query;
@@ -70,7 +86,7 @@ router.post("/transactions", protect, async (req, res) => {
       transaction: tx,
       instructions: {
         payTo: process.env.MANUAL_PAYMENT_NAME,
-        numbers: process.env.MANUAL_PAYMENT_NUMBERS,
+        numbers: parseManualPaymentNumbers(),
         note: "Send payment then submit your transaction reference or screenshot for review.",
       },
     });

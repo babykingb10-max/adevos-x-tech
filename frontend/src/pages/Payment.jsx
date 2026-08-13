@@ -110,17 +110,35 @@ export default function Payment() {
 
           {tx.status === "pending" && method?.key === "manual" && (
             <div className="space-y-3">
-              <p>Send payment to the details below, then submit your transaction reference.</p>
+              <p>Send payment to one of the numbers below, then submit your transaction reference.</p>
               {instructions ? (
-                <div className="card p-3 bg-brand/5 dark:bg-brand-dark/5">
-                  <p><b>Pay to:</b> {instructions.payTo}</p>
-                  <p className="mt-1"><b>Numbers:</b> {instructions.numbers}</p>
+                <div className="space-y-2">
+                  {instructions.numbers?.map((n, i) => (
+                    <div key={i} className="card p-0 overflow-hidden flex items-stretch text-xs font-body">
+                      <div className="flex-1 flex divide-x divide-border dark:divide-border-dark">
+                        <span className="flex-1 px-3 py-2.5 truncate">{n.number}</span>
+                        <span className="px-3 py-2.5 text-muted dark:text-muted-dark truncate">{n.network}</span>
+                        <span className="px-3 py-2.5 text-muted dark:text-muted-dark truncate">{n.name}</span>
+                      </div>
+                      <button
+                        onClick={() => navigator.clipboard.writeText(n.number)}
+                        className="px-3 py-2.5 bg-brand/10 dark:bg-brand-dark/10 text-brand dark:text-brand-dark font-medium shrink-0"
+                      >
+                        Copy number
+                      </button>
+                    </div>
+                  ))}
+                  {!instructions.numbers?.length && (
+                    <p className="text-muted dark:text-muted-dark text-xs">
+                      No payment numbers configured yet — set MANUAL_PAYMENT_NUMBERS in the backend env vars.
+                    </p>
+                  )}
                 </div>
               ) : (
                 <p className="text-muted dark:text-muted-dark">Loading payment details...</p>
               )}
               <input value={proofRef} onChange={(e) => setProofRef(e.target.value)} placeholder="Transaction reference"
-                     className="w-full rounded-full px-4 py-2 bg-bg dark:bg-bg-dark border border-border dark:border-border-dark text-sm font-body outline-none" />
+                     className="w-full rounded-lg px-4 py-2 bg-bg dark:bg-bg-dark border border-border dark:border-border-dark text-sm font-body outline-none" />
               <button onClick={submitProof} className="btn-primary w-full text-sm">Submit for review</button>
             </div>
           )}

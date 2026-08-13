@@ -22,7 +22,7 @@ function RowButton({ active, disabled, onClick, children }) {
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`flex-1 text-xs px-2 py-2 rounded-full font-body text-center truncate ${
+      className={`flex-1 text-xs px-2 py-2 rounded-lg font-body text-center truncate ${
         active ? "btn-primary" : "btn-outline"
       } ${disabled ? "opacity-60" : ""}`}
     >
