@@ -47,7 +47,7 @@ export default function MyPaymentsPopup({ onClose }) {
               <span className={`text-xs font-semibold ${STATUS_COLOR[tx.status]}`}>{STATUS_LABEL[tx.status]}</span>
             </div>
             {tx.status === "confirmed" && (
-              <button onClick={() => handleContinue(tx)} className="mt-2 text-xs px-3 py-1 rounded-full btn-primary">
+              <button onClick={() => handleContinue(tx)} className="mt-2 text-xs px-3 py-1 rounded-lg btn-primary">
                 Continue to deployment
               </button>
             )}
