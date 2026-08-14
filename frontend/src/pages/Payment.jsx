@@ -4,6 +4,22 @@ import api from "../api/client";
 import Heading from "../components/ui/Heading";
 import { getIcon } from "../lib/icons";
 
+// Defensive: normalizes `instructions.numbers` whether the backend returns
+// the new structured array ([{ network, number, name }]) or an older plain
+// string ("M-Pesa: 0700000000, ...") — prevents a crash (blank screen) if the
+// backend hasn't been redeployed yet with the newer parsing logic.
+function normalizeNumbers(instructions) {
+  const raw = instructions?.numbers;
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw === "string" && raw.trim()) {
+    return raw.split(",").map((entry) => {
+      const [network, number] = entry.split(":").map((s) => s.trim());
+      return { network: network || "", number: number || entry.trim(), name: instructions.payTo || "" };
+    });
+  }
+  return [];
+}
+
 export default function Payment() {
   const [params] = useSearchParams();
   const plan = params.get("plan") || "user";
@@ -113,7 +129,7 @@ export default function Payment() {
               <p>Send payment to one of the numbers below, then submit your transaction reference.</p>
               {instructions ? (
                 <div className="space-y-2">
-                  {instructions.numbers?.map((n, i) => (
+                  {normalizeNumbers(instructions).map((n, i) => (
                     <div key={i} className="card p-0 overflow-hidden flex items-stretch text-xs font-body">
                       <div className="flex-1 flex divide-x divide-border dark:divide-border-dark">
                         <span className="flex-1 px-3 py-2.5 truncate">{n.number}</span>
@@ -128,7 +144,7 @@ export default function Payment() {
                       </button>
                     </div>
                   ))}
-                  {!instructions.numbers?.length && (
+                  {!normalizeNumbers(instructions).length && (
                     <p className="text-muted dark:text-muted-dark text-xs">
                       No payment numbers configured yet — set MANUAL_PAYMENT_NUMBERS in the backend env vars.
                     </p>

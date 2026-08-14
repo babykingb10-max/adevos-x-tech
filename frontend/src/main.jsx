@@ -7,22 +7,25 @@ import { AuthProvider } from "./context/AuthContext.jsx";
 import { PopupProvider } from "./context/PopupContext.jsx";
 import { ConfirmProvider } from "./context/ConfirmContext.jsx";
 import { SocketProvider } from "./context/SocketContext.jsx";
+import ErrorBoundary from "./components/ui/ErrorBoundary.jsx";
 import "./index.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <BrowserRouter>
-      <ThemeProvider>
-        <AuthProvider>
-          <SocketProvider>
-            <PopupProvider>
-              <ConfirmProvider>
-                <App />
-              </ConfirmProvider>
-            </PopupProvider>
-          </SocketProvider>
-        </AuthProvider>
-      </ThemeProvider>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <ThemeProvider>
+          <AuthProvider>
+            <SocketProvider>
+              <PopupProvider>
+                <ConfirmProvider>
+                  <App />
+                </ConfirmProvider>
+              </PopupProvider>
+            </SocketProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   </React.StrictMode>
 );
