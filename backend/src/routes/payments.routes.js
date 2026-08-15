@@ -153,6 +153,9 @@ router.post("/paypal/:orderId/capture", protect, async (req, res) => {
 /* Submit proof for a manual payment (reference number or screenshot URL) */
 router.post("/transactions/:id/proof", protect, async (req, res) => {
   const { proofReference, proofScreenshotUrl } = req.body;
+  if (!proofReference?.trim() && !proofScreenshotUrl?.trim()) {
+    return res.status(400).json({ message: "A transaction reference or screenshot is required." });
+  }
   const tx = await Transaction.findOne({ _id: req.params.id, user: req.user._id });
   if (!tx) return res.status(404).json({ message: "Not found" });
 
@@ -162,6 +165,7 @@ router.post("/transactions/:id/proof", protect, async (req, res) => {
   await tx.save();
 
   await whatsapp.notifyAdminOfManualPayment(tx, req.user);
+  await email.notifyAdminOfManualPaymentEmail({ user: req.user, transaction: tx });
   emitLiveEvent(req.app, `${req.user.name} submitted manual payment proof — awaiting review`);
   res.json(tx);
 });
@@ -214,9 +218,13 @@ async function activatePlan(userId, plan, durationWeeks, method) {
 }
 
 /* ---------------- Admin ---------------- */
+// Only shows transactions the admin actually needs to act on — i.e. AFTER
+// the user has submitted proof ("awaiting_admin_review"). A manual payment
+// that was merely started (package chosen, "Continue" clicked) but never
+// followed through with a submitted reference/screenshot never appears here.
 router.get("/admin/pending", protect, adminOnly, async (req, res) => {
   res.json(
-    await Transaction.find({ status: { $in: ["pending", "awaiting_admin_review"] } })
+    await Transaction.find({ status: "awaiting_admin_review" })
       .populate("user", "name email")
       .sort({ createdAt: -1 })
   );
