@@ -25,14 +25,27 @@ function generateReferralCode(name) {
 /* ---------------- Email/password signup ---------------- */
 router.post("/register", async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, referralCode } = req.body;
     if (!email || !password) return res.status(400).json({ message: "Email and password required" });
 
     const existing = await User.findOne({ email: email.toLowerCase() });
     if (existing) return res.status(409).json({ message: "Account already exists" });
 
+    let referredBy = null;
+    if (referralCode) {
+      const referrer = await User.findOne({ referralCode });
+      if (referrer) referredBy = referrer._id;
+    }
+
     const passwordHash = await bcrypt.hash(password, 10);
-    const user = await User.create({ name, email, passwordHash });
+    const user = await User.create({ name, email, passwordHash, referredBy });
+
+    if (referredBy) {
+      const bonus = Number(process.env.REFERRAL_SIGNUP_BONUS_COINS || 50);
+      await User.findByIdAndUpdate(referredBy, {
+        $inc: { coins: bonus, coinsEarnedThisMonth: bonus, totalReferrals: 1 },
+      });
+    }
 
     const token = signToken(user);
     sendTokenCookie(res, token);
