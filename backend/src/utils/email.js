@@ -38,4 +38,37 @@ async function sendPaymentConfirmedEmail(to, name, plan, durationWeeks) {
   );
 }
 
-module.exports = { isConfigured, sendEmail, sendFeedbackConfirmation, sendPaymentConfirmedEmail };
+// Notifies the admin (ADMIN_NOTIFICATION_EMAIL) by email when a user submits
+// manual payment proof — this is the "user's submission reaches me via email"
+// flow: the email comes FROM the platform's configured sender, addressed
+// TO the admin, but includes the user's own email as the reply-to so the
+// admin can respond to that person directly if needed.
+async function notifyAdminOfManualPaymentEmail({ user, transaction }) {
+  const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
+  if (!adminEmail || !isConfigured()) {
+    console.log("[email] ADMIN_NOTIFICATION_EMAIL not set or SMTP not configured — skipping admin email.");
+    return null;
+  }
+  const transport = getTransport();
+  return transport.sendMail({
+    from: process.env.EMAIL_FROM,
+    to: adminEmail,
+    replyTo: user.email,
+    subject: `New manual payment submitted — ${user.name}`,
+    html: `
+      <p>A user submitted proof of a manual payment and is waiting for review.</p>
+      <ul>
+        <li><b>User:</b> ${user.name} (${user.email})</li>
+        <li><b>Plan:</b> ${transaction.plan} — ${transaction.durationWeeks} weeks</li>
+        <li><b>Amount:</b> ${transaction.amount} ${transaction.currency}</li>
+        <li><b>Reference:</b> ${transaction.proofReference || "(screenshot only, no reference typed)"}</li>
+      </ul>
+      <p>Review and confirm it in the Admin App under Payment → Pending payments.</p>
+    `,
+  });
+}
+
+module.exports = {
+  isConfigured, sendEmail, sendFeedbackConfirmation, sendPaymentConfirmedEmail,
+  notifyAdminOfManualPaymentEmail,
+};
