@@ -155,7 +155,7 @@ export default function Payment() {
               )}
               <input value={proofRef} onChange={(e) => setProofRef(e.target.value)} placeholder="Transaction reference"
                      className="w-full rounded-lg px-4 py-2 bg-bg dark:bg-bg-dark border border-border dark:border-border-dark text-sm font-body outline-none" />
-              <button onClick={submitProof} className="btn-primary w-full text-sm">Submit for review</button>
+              <button onClick={submitProof} disabled={!proofRef.trim()} className="btn-primary w-full text-sm disabled:opacity-40">Submit for review</button>
             </div>
           )}
 
