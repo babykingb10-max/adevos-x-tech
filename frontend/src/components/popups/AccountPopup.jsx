@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Modal from "../ui/Modal";
+import Heading from "../ui/Heading";
 import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
 import { usePopup } from "../../context/PopupContext";
@@ -12,8 +13,13 @@ function formatRemaining(expiresAt) {
   return `${days} day${days !== 1 ? "s" : ""} remaining`;
 }
 
+// A centered section title above each group of rows (Plan / Theme / Account management).
+function SectionTitle({ children }) {
+  return <Heading as="h4" className="text-sm text-center mb-2">{children}</Heading>;
+}
+
 // A single row of up-to-three equal-width pill buttons — the shared visual
-// pattern used for every row in this popup (Plan / Settings / Referral / Actions).
+// pattern used for every row in this popup.
 function ButtonRow({ children }) {
   return <div className="flex gap-2 mb-4">{children}</div>;
 }
@@ -44,6 +50,10 @@ export default function AccountPopup({ onClose }) {
     user.activePackage?.expiresAt && new Date(user.activePackage.expiresAt) > new Date();
   const planCategory = !hasValidPackage ? "none" : user.plan; // "none" | "user" | "deployer"
 
+  const referralUrl = user.referralCode ? `${window.location.origin}/r/${user.referralCode}` : null;
+  // Shows just enough of the link to recognize it, e.g. "adevos-x-tech..."
+  const referralPreview = referralUrl ? referralUrl.replace(/^https?:\/\//, "").slice(0, 16) + "..." : null;
+
   function goGenerateReferral() {
     onClose();
     navigate("/av-coins");
@@ -63,7 +73,8 @@ export default function AccountPopup({ onClose }) {
         <p className="text-muted dark:text-muted-dark font-body text-sm">{user.email}</p>
       </div>
 
-      {/* Row 1: Plan */}
+      {/* Plan */}
+      <SectionTitle>Plan</SectionTitle>
       {planCategory === "none" ? (
         <ButtonRow>
           <RowButton disabled>No active plan</RowButton>
@@ -85,7 +96,8 @@ export default function AccountPopup({ onClose }) {
         </>
       )}
 
-      {/* Row 2: Settings (theme) */}
+      {/* Theme */}
+      <SectionTitle>Theme</SectionTitle>
       <ButtonRow>
         {["system", "light", "dark"].map((m) => (
           <RowButton key={m} active={mode === m} onClick={() => setMode(m)}>
@@ -94,12 +106,14 @@ export default function AccountPopup({ onClose }) {
         ))}
       </ButtonRow>
 
-      {/* Row 3: Referral */}
-      {user.referralCode ? (
+      {/* Account management (Referral + Actions) */}
+      <SectionTitle>Account management</SectionTitle>
+
+      {referralUrl ? (
         <ButtonRow>
-          <RowButton disabled>Referral Link</RowButton>
-          <RowButton onClick={() => navigator.clipboard.writeText(`${window.location.origin}/r/${user.referralCode}`)}>Copy</RowButton>
-          <RowButton onClick={() => navigator.share?.({ url: `${window.location.origin}/r/${user.referralCode}` })}>Share</RowButton>
+          <RowButton disabled>{referralPreview}</RowButton>
+          <RowButton onClick={() => navigator.clipboard.writeText(referralUrl)}>Copy</RowButton>
+          <RowButton onClick={() => navigator.share?.({ url: referralUrl })}>Share</RowButton>
         </ButtonRow>
       ) : (
         <ButtonRow>
@@ -109,7 +123,6 @@ export default function AccountPopup({ onClose }) {
         </ButtonRow>
       )}
 
-      {/* Row 4: Actions — depends on plan state */}
       <ButtonRow>
         <RowButton onClick={() => { onClose(); openPopup("my_payments"); }}>My payments</RowButton>
         {planCategory === "none" && (
