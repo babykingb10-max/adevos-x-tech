@@ -78,8 +78,21 @@ router.post("/transactions", protect, async (req, res) => {
 
   /* ---- Manual payment ---- */
   if (method === "manual") {
+    // Convert the package's base USD price into whatever display currency
+    // the user picked (TZS, KES, ...) — storing the raw USD number under a
+    // non-USD currency label was the bug that made amounts look wrong.
+    let manualAmount = pkg.priceUSD;
+    const manualCurrency = currency || "USD";
+    if (manualCurrency !== "USD") {
+      try {
+        const rates = await getLiveRates();
+        const rate = rates.rates[manualCurrency] || 1;
+        manualAmount = Math.round(pkg.priceUSD * rate);
+      } catch (err) { /* fall back to the raw USD figure if rates are unavailable */ }
+    }
+
     const tx = await Transaction.create({
-      user: req.user._id, plan, durationWeeks, amount: pkg.priceUSD, currency: currency || "USD",
+      user: req.user._id, plan, durationWeeks, amount: manualAmount, currency: manualCurrency,
       method: "manual", status: "pending",
     });
     return res.status(201).json({
