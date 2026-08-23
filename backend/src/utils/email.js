@@ -12,7 +12,17 @@ function getTransport() {
     auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
   });
 }
-
+async function sendOtpEmail(to, name, code) {
+  return sendEmail(
+    to,
+    "Your Adevos-X Tech verification code",
+    `<p>Hi ${name || "there"},</p>
+     <p>Your verification code is:</p>
+     <p style="font-size:28px;font-weight:700;letter-spacing:4px;color:#00A86B;">${code}</p>
+     <p>This code expires in 10 minutes. If you didn't request this, you can ignore this email.</p>
+     <p>— Adevos-X Tech</p>`
+  );
+}
 async function sendEmail(to, subject, html) {
   if (!isConfigured()) {
     console.log("[email] Not configured — skipping email to", to, subject);
@@ -69,6 +79,6 @@ async function notifyAdminOfManualPaymentEmail({ user, transaction }) {
 }
 
 module.exports = {
-  isConfigured, sendEmail, sendFeedbackConfirmation, sendPaymentConfirmedEmail,
+  isConfigured, sendEmail, sendOtpEmail, sendFeedbackConfirmation, sendPaymentConfirmedEmail,
   notifyAdminOfManualPaymentEmail,
 };
