@@ -218,6 +218,12 @@ router.post("/webhooks/paypal", express.json(), async (req, res) => {
 });
 
 /* ---------------- Shared: activate a user's plan/package after confirmation ---------------- */
+// Activates (or upgrades) a user's plan/package after a payment is confirmed.
+// Does NOT touch/recreate the person's existing bot deployment — app, session,
+// owner info stay exactly as they were. It only syncs the deployment's `plan`
+// label and expiry/package to match the new subscription, so upgrading
+// User -> Deployer instantly lets them add more bots without losing the one
+// they already had running.
 async function activatePlan(userId, plan, durationWeeks, method) {
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + Number(durationWeeks) * 7);
@@ -226,6 +232,12 @@ async function activatePlan(userId, plan, durationWeeks, method) {
     { plan, activePackage: { paymentMethod: method, durationWeeks, startedAt: new Date(), expiresAt } },
     { new: true }
   );
+
+  await Deployment.updateMany(
+    { user: userId, status: { $in: ["queued", "building", "active", "stopped"] } },
+    { plan, packageDurationWeeks: durationWeeks, expiresAt }
+  );
+
   if (user) await email.sendPaymentConfirmedEmail(user.email, user.name, plan, durationWeeks);
   return user;
 }
