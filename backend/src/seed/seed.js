@@ -59,6 +59,7 @@ async function seed() {
       email: adminEmail,
       passwordHash: await bcrypt.hash(process.env.ADMIN_PASSWORD || "admin123", 10),
       role: "admin",
+emailVerified: true,
     });
     console.log("[seed] Admin account created:", adminEmail);
   } else {
