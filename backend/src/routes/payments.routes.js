@@ -1,6 +1,6 @@
 const express = require("express");
 const { v4: uuidv4 } = require("uuid");
-const { PaymentMethod, Package, Transaction, User } = require("../models");
+const { PaymentMethod, Package, Transaction, User, Deployment } = require("../models");
 const { protect, adminOnly } = require("../middleware/auth");
 const paystack = require("../utils/paystack");
 const paypal = require("../utils/paypal");
