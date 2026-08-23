@@ -103,6 +103,9 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => console.log(`[server] Adevos-X Tech API running on port ${PORT}`));
+server.listen(PORT, () => {
+  console.log(`[server] Adevos-X Tech API running on port ${PORT}`);
+  require("./utils/expiryCheck").startExpiryCheckJob(app);
+});
 
 module.exports = { app, io };
