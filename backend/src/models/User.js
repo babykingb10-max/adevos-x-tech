@@ -40,6 +40,12 @@ const UserSchema = new mongoose.Schema(
     role: { type: String, enum: ["user", "admin"], default: "user" },
     isBlocked: { type: Boolean, default: false },
 
+    // Email verification (OTP sent at signup — Google accounts are
+    // pre-verified since Google already confirmed the email)
+    emailVerified: { type: Boolean, default: false },
+    otpCode: { type: String, default: null },
+    otpExpiresAt: { type: Date, default: null },
+
     lastLoginAt: { type: Date },
   },
   { timestamps: true }
