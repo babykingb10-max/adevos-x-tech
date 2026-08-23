@@ -304,12 +304,14 @@ router.post("/", protect, async (req, res) => {
     if (!bot || !platform) return res.status(400).json({ message: "Invalid bot or platform" });
 
     if (req.user.plan === "user") {
-      const existingActive = await Deployment.findOne({
+      // "failed" builds don't count — the person should be able to retry
+      // without needing to delete a build that never actually worked.
+      const existingBot = await Deployment.findOne({
         user: req.user._id,
-        status: { $in: ["queued", "building", "active"] },
+        status: { $in: ["queued", "building", "active", "stopped"] },
       });
-      if (existingActive) {
-        return res.status(409).json({ message: "User plan allows only one active bot. Delete or upgrade to Deployer plan first." });
+      if (existingBot) {
+        return res.status(409).json({ message: "User plan allows only one bot at a time. Delete your existing bot or upgrade to Deployer plan first." });
       }
     }
 
