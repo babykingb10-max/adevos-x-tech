@@ -431,4 +431,8 @@ router.delete("/admin/:id", protect, adminOnly, async (req, res) => {
   res.json({ message: "Deleted by admin" });
 });
 
+// Exposed so server.js's expiry-check job can reuse the exact same per-platform
+// delete logic instead of duplicating it.
+router.platformHandlers = platformHandlers;
+
 module.exports = router;
