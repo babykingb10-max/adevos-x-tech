@@ -15,7 +15,7 @@ import SignIn from "./pages/SignIn";
 import AdminApp from "./pages/admin/AdminApp";
 import PaymentCallback from "./pages/PaymentCallback";
 // ...
-<Route path="/payment/callback" element={<PaymentCallback />} />
+
 // Shows the branded loading screen briefly on every route change, giving the
 // new page's data fetches time to resolve before the "empty then pop-in"
 // flash the person was seeing.
@@ -68,6 +68,7 @@ export default function App() {
                 {/* Any unmatched path (e.g. an old/removed route) lands on the
                     homepage instead of rendering blank content with just the
                     Navbar/Footer showing. */}
+<Route path="/payment/callback" element={<PaymentCallback />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </main>
