@@ -1,5 +1,5 @@
 const express = require("express");
-const { User, Update, UpdateReadReceipt } = require("../models");
+const { User, Update, UpdateReadReceipt, Deployment } = require("../models");
 const { protect, adminOnly } = require("../middleware/auth");
 
 const router = express.Router();
