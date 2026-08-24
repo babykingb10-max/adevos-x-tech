@@ -13,7 +13,9 @@ import Deployment from "./pages/Deployment";
 import Payment from "./pages/Payment";
 import SignIn from "./pages/SignIn";
 import AdminApp from "./pages/admin/AdminApp";
-
+import PaymentCallback from "./pages/PaymentCallback";
+// ...
+<Route path="/payment/callback" element={<PaymentCallback />} />
 // Shows the branded loading screen briefly on every route change, giving the
 // new page's data fetches time to resolve before the "empty then pop-in"
 // flash the person was seeing.
