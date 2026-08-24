@@ -187,6 +187,31 @@ router.get("/transactions/mine", protect, async (req, res) => {
   res.json(await Transaction.find({ user: req.user._id }).sort({ createdAt: -1 }));
 });
 
+// Called by the frontend the instant Paystack redirects the user back —
+// double-checks status directly with Paystack (in case the webhook hasn't
+// fired yet) so the person doesn't land on a blank/uncertain page.
+router.get("/verify-paystack/:reference", protect, async (req, res) => {
+  const tx = await Transaction.findOne({ providerReference: req.params.reference, user: req.user._id });
+  if (!tx) return res.status(404).json({ message: "Transaction not found" });
+
+  if (tx.status === "confirmed") return res.json(tx);
+
+  try {
+    const result = await paystack.verifyTransaction(req.params.reference);
+    if (result.status === "success") {
+      tx.status = "confirmed";
+      tx.providerRaw = result;
+      await tx.save();
+      await activatePlan(tx.user, tx.plan, tx.durationWeeks, "paystack");
+      emitLiveEvent(req.app, `Payment confirmed via Paystack (verified on return) for ${tx.plan} plan`);
+    } else if (["failed", "abandoned"].includes(result.status)) {
+      tx.status = "failed";
+      await tx.save();
+    }
+  } catch (err) { /* leave as pending — the webhook may still confirm it shortly */ }
+
+  res.json(tx);
+});
 /* ---------------- Webhooks (auto-confirm) ---------------- */
 // Mounted with express.raw() in server.js so we can verify the raw-body signature
 router.post("/webhooks/paystack", async (req, res) => {
