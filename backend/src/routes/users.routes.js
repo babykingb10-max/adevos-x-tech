@@ -50,8 +50,9 @@ router.patch("/:id/package", protect, adminOnly, async (req, res) => {
 // Admin grants a plan + package directly (no payment required) — e.g. "guarantee"
 // a user 2 weeks of the User plan for free. Sets activePackage.expiresAt so the
 // smart-deploy flow treats it exactly like a paid, confirmed subscription.
-router.post("/:id/grant-plan", protect, adminOnly, async (req, res) => {
-  const { plan, durationWeeks } = req.body; // plan: "user"|"deployer", durationWeeks: 2|4|8
+
+  router.post("/:id/grant-plan", protect, adminOnly, async (req, res) => {
+  const { plan, durationWeeks } = req.body;
   const user = await User.findById(req.params.id);
   if (!user) return res.status(404).json({ message: "Not found" });
 
@@ -60,6 +61,14 @@ router.post("/:id/grant-plan", protect, adminOnly, async (req, res) => {
   user.plan = plan;
   user.activePackage = { paymentMethod: "manual", durationWeeks, startedAt: new Date(), expiresAt };
   await user.save();
+
+  // Keep it consistent with the normal payment flow: any existing bot this
+  // user already has gets its plan/package synced too, not left behind.
+  await Deployment.updateMany(
+    { user: user._id, status: { $in: ["queued", "building", "active", "stopped"] } },
+    { plan, packageDurationWeeks: durationWeeks, expiresAt }
+  );
+
   res.json(user);
 });
 
