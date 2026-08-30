@@ -20,6 +20,8 @@ export default function Deployment() {
   const [deployment, setDeployment] = useState(null);
   const [playingIdx, setPlayingIdx] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [error, setError] = useState(null); // { message, conflict: boolean }
+  const [submitting, setSubmitting] = useState(false);
   const audioRef = useRef(null);
   const navigate = useNavigate();
   const { open: openPopup } = usePopup();
@@ -49,17 +51,30 @@ export default function Deployment() {
   }, [isPlaying, playingIdx]);
 
   async function handleDeploy() {
-    const searchParams = new URLSearchParams(window.location.search);
-    const { data } = await api.post("/deployment", {
-      botId: searchParams.get("bot"),
-      platformId, ownerName, ownerNumber, sessionId,
-      durationWeeks: Number(searchParams.get("duration")) || 4,
-    });
-    setDeployment(data);
-    setLogs(data.buildLogs || []);
+    setError(null);
+    setSubmitting(true);
+    try {
+      const searchParams = new URLSearchParams(window.location.search);
+      const { data } = await api.post("/deployment", {
+        botId: searchParams.get("bot"),
+        platformId, ownerName, ownerNumber, sessionId,
+        durationWeeks: Number(searchParams.get("duration")) || 4,
+      });
+      setDeployment(data);
+      setLogs(data.buildLogs || []);
+    } catch (err) {
+      // This is the fix: a User-plan account trying to deploy a second bot
+      // (or any other deploy error) used to fail silently. Now it's always
+      // shown, and the "already have a bot" case gets clear next steps.
+      const status = err.response?.status;
+      const message = err.response?.data?.message || "Could not start the deployment — please try again.";
+      setError({ message, conflict: status === 409 });
+    } finally {
+      setSubmitting(false);
+    }
   }
 
-  const canDeploy = platformId && ownerName && ownerNumber && sessionId && !locked;
+  const canDeploy = platformId && ownerName && ownerNumber && sessionId && !locked && !submitting;
   const currentTrack = music[playingIdx];
   const selectedPlatform = platforms.find((p) => p._id === platformId);
 
@@ -167,9 +182,32 @@ export default function Deployment() {
         <div className="flex gap-2">
           <input placeholder="Paste session ID" value={sessionId} disabled={locked} onChange={(e) => setSessionId(e.target.value)}
                  className="flex-1 rounded-full px-4 py-2 bg-bg dark:bg-bg-dark border border-border dark:border-border-dark text-sm font-body outline-none disabled:opacity-50" />
-          <button disabled={!canDeploy} onClick={handleDeploy} className="btn-primary disabled:opacity-40">Deploy</button>
+          <button disabled={!canDeploy} onClick={handleDeploy} className="btn-primary disabled:opacity-40">
+            {submitting ? "..." : "Deploy"}
+          </button>
         </div>
       </div>
+
+      {/* The fix: this used to fail silently. Now the "you already have a
+          bot" conflict gets clear, actionable next steps. */}
+      {error && (
+        <div className="card p-4 mb-6 border-2 border-red-500/40">
+          <p className="text-sm font-body text-red-500 mb-3">{error.message}</p>
+          {error.conflict && (
+            <div className="space-y-2">
+              <p className="text-xs text-muted dark:text-muted-dark font-body">
+                You're on the User plan, which allows only one bot at a time. To deploy this one, choose an option:
+              </p>
+              <button onClick={() => navigate("/bot-management")} className="btn-outline text-xs w-full">
+                Go delete or change my existing bot
+              </button>
+              <button onClick={() => navigate(`/payment?plan=deployer&bot=${botId}`)} className="btn-primary text-xs w-full">
+                Upgrade to Deployer plan (deploy multiple bots)
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {deployment && (
         <div className="card p-4">
