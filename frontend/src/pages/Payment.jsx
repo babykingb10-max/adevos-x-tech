@@ -35,12 +35,24 @@ export default function Payment() {
   const [tx, setTx] = useState(null);
   const [instructions, setInstructions] = useState(null);
   const [proofRef, setProofRef] = useState("");
+  const [avBalance, setAvBalance] = useState(null);
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     api.get(`/payments/methods?plan=${plan}`).then((r) => setMethods(r.data)).catch(() => {});
     api.get(`/payments/packages?plan=${plan}`).then((r) => setPackages(r.data)).catch(() => {});
     api.get("/payments/currency-rates").then((r) => setRates(r.data)).catch(() => {});
   }, [plan]);
+
+  // Fetch the user's live AV Coins balance whenever they pick that method,
+  // so we can tell right away whether they can actually afford the package —
+  // no more silently failing when they hit Continue.
+  useEffect(() => {
+    if (method?.key === "av_coins") {
+      api.get("/av-coins/me").then((r) => setAvBalance(r.data.balance)).catch(() => {});
+    }
+  }, [method]);
 
   useEffect(() => {
     if (tx?.status === "confirmed" && botId) {
@@ -60,22 +72,41 @@ export default function Payment() {
     return `${converted} ${currency}`;
   }
 
-  async function handleContinue() {
-    const { data } = await api.post("/payments/transactions", {
-      plan, durationWeeks: pkg.durationWeeks, method: method.key, currency,
-    });
+  const avRequired = pkg?.priceCoins ?? null;
+  const avHasEnough = method?.key === "av_coins" && avBalance !== null && avRequired !== null && avBalance >= avRequired;
+  const avInsufficient = method?.key === "av_coins" && avBalance !== null && avRequired !== null && avBalance < avRequired;
 
-    if (data.checkoutUrl) {
-      window.location.href = data.checkoutUrl;
-      return;
+  async function handleContinue() {
+    setError("");
+    setSubmitting(true);
+    try {
+      const { data } = await api.post("/payments/transactions", {
+        plan, durationWeeks: pkg.durationWeeks, method: method.key, currency,
+      });
+
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+        return;
+      }
+      setTx(data.transaction || data);
+      if (data.instructions) setInstructions(data.instructions);
+    } catch (err) {
+      // This is the fix: errors (like "insufficient AV Coins") used to be
+      // swallowed silently. Now they're always shown to the person.
+      setError(err.response?.data?.message || "Something went wrong — please try again.");
+    } finally {
+      setSubmitting(false);
     }
-    setTx(data.transaction || data);
-    if (data.instructions) setInstructions(data.instructions);
   }
 
   async function submitProof() {
-    const { data } = await api.post(`/payments/transactions/${tx._id}/proof`, { proofReference: proofRef });
-    setTx(data);
+    setError("");
+    try {
+      const { data } = await api.post(`/payments/transactions/${tx._id}/proof`, { proofReference: proofRef });
+      setTx(data);
+    } catch (err) {
+      setError(err.response?.data?.message || "Could not submit — please try again.");
+    }
   }
 
   return (
@@ -87,8 +118,8 @@ export default function Payment() {
         {methods.map((m) => {
           const Icon = getIcon(m.icon);
           return (
-            <button key={m._id} onClick={() => setMethod(m)}
-              className={`card px-4 py-2 text-sm font-body flex items-center gap-2 ${method?._id === m._id ? "border-brand dark:border-brand-dark" : ""}`}>
+            <button key={m._id} onClick={() => { setMethod(m); setError(""); }}
+              className={`card px-4 py-2 text-sm font-body flex items-center gap-2 ${method?._id === m._id ? "border-2 border-brand dark:border-brand-dark" : ""}`}>
               <Icon className="text-brand dark:text-brand-dark" size={16} />
               {m.label}
             </button>
@@ -96,26 +127,58 @@ export default function Payment() {
         })}
       </div>
 
-      <div className="flex justify-center mb-8">
-        <select value={currency} onChange={(e) => setCurrency(e.target.value)}
-                className="card px-4 py-2 text-sm font-body bg-transparent">
-          {Object.keys(rates?.rates || { USD: 1 }).map((c) => <option key={c}>{c}</option>)}
-        </select>
-      </div>
+      {method?.key !== "av_coins" && (
+        <div className="flex justify-center mb-8">
+          <select value={currency} onChange={(e) => setCurrency(e.target.value)}
+                  className="card px-4 py-2 text-sm font-body bg-transparent">
+            {Object.keys(rates?.rates || { USD: 1 }).map((c) => <option key={c}>{c}</option>)}
+          </select>
+        </div>
+      )}
 
       <Heading as="h2" className="text-lg text-center mb-4">Available packages</Heading>
-      <div className="grid grid-cols-3 gap-3 mb-8">
+      <div className="grid grid-cols-3 gap-3 mb-6">
         {packages.map((p) => (
-          <button key={p._id} onClick={() => setPkg(p)}
-            className={`card p-4 text-center font-body ${pkg?._id === p._id ? "border-brand dark:border-brand-dark" : ""}`}>
+          <button key={p._id} onClick={() => { setPkg(p); setError(""); }}
+            className={`card p-4 text-center font-body ${pkg?._id === p._id ? "border-2 border-brand dark:border-brand-dark" : ""}`}>
             <p className="text-sm">{p.durationWeeks} weeks</p>
             <p className="text-xs text-muted dark:text-muted-dark mt-1">{displayPrice(p)}</p>
           </button>
         ))}
       </div>
 
+      {/* AV Coins: show balance vs required BEFORE letting them attempt payment */}
+      {method?.key === "av_coins" && pkg && (
+        <div className="card p-4 mb-6 text-sm font-body">
+          <div className="flex justify-between mb-1">
+            <span className="text-muted dark:text-muted-dark">Your balance</span>
+            <span className="font-semibold">{avBalance === null ? "…" : `${avBalance} AV`}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted dark:text-muted-dark">Required</span>
+            <span className="font-semibold">{avRequired} AV</span>
+          </div>
+        </div>
+      )}
+
+      {error && <p className="text-red-500 text-sm font-body text-center mb-4">{error}</p>}
+
       {!tx && (
-        <button disabled={!ready} onClick={handleContinue} className="btn-primary w-full disabled:opacity-40">Continue</button>
+        <>
+          {avInsufficient ? (
+            <button onClick={() => navigate("/av-coins")} className="btn-primary w-full">
+              Not enough coins — Earn more coins
+            </button>
+          ) : (
+            <button
+              disabled={!ready || submitting || (method?.key === "av_coins" && avBalance === null)}
+              onClick={handleContinue}
+              className="btn-primary w-full disabled:opacity-40"
+            >
+              {submitting ? "Processing..." : method?.key === "av_coins" && avHasEnough ? `Pay ${avRequired} AV Coins` : "Continue"}
+            </button>
+          )}
+        </>
       )}
 
       {tx && (
