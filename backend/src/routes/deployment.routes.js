@@ -304,16 +304,18 @@ router.post("/", protect, async (req, res) => {
     if (!bot || !platform) return res.status(400).json({ message: "Invalid bot or platform" });
 
     if (req.user.plan === "user") {
-      // "failed" builds don't count — the person should be able to retry
-      // without needing to delete a build that never actually worked.
-      const existingBot = await Deployment.findOne({
-        user: req.user._id,
-        status: { $in: ["queued", "building", "active", "stopped"] },
-      });
-      if (existingBot) {
-        return res.status(409).json({ message: "User plan allows only one bot at a time. Delete your existing bot or upgrade to Deployer plan first." });
-      }
-    }
+  // "failed" builds don't count — the person should be able to retry
+  // without needing to delete a build that never actually worked.
+  const existingBot = await Deployment.findOne({
+    user: req.user._id,
+    status: { $in: ["queued", "building", "active", "stopped"] },
+  });
+  if (existingBot) {
+    return res.status(409).json({
+      message: "You already have a bot deployed on the User plan. Delete it first to deploy a different one, change its owner number/platform from Bot Management instead, or upgrade to Deployer plan to run more than one bot.",
+    });
+  }
+}
 
     const appName = generateAppName(bot.slug, ownerName, platform.appNameRules);
     const expiresAt = new Date();
