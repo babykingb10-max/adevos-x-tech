@@ -17,7 +17,7 @@ export default function SignIn() {
   const [otpStage, setOtpStage] = useState(false);
   const [otpEmail, setOtpEmail] = useState("");
   const [otpCode, setOtpCode] = useState("");
-  const { refetch } = useAuth();
+  const { refetch, loginWithToken } = useAuth();
   const { open: openPopup } = usePopup();
   const navigate = useNavigate();
 
@@ -32,7 +32,8 @@ export default function SignIn() {
 
   async function handleGoogleCredential(idToken) {
     try {
-      await api.post("/auth/google", { idToken, referralCode });
+      const { data } = await api.post("/auth/google", { idToken, referralCode });
+      loginWithToken(data.token);
       await refetch();
       goHomeAndOpenAccount();
     } catch (err) {
@@ -46,7 +47,8 @@ export default function SignIn() {
     setInfo("");
     try {
       if (mode === "login") {
-        await api.post("/auth/login", form);
+        const { data } = await api.post("/auth/login", form);
+        loginWithToken(data.token);
         await refetch();
         goHomeAndOpenAccount();
       } else {
@@ -70,7 +72,8 @@ export default function SignIn() {
     e.preventDefault();
     setError("");
     try {
-      await api.post("/auth/verify-otp", { email: otpEmail, code: otpCode });
+      const { data } = await api.post("/auth/verify-otp", { email: otpEmail, code: otpCode });
+      loginWithToken(data.token);
       await refetch();
       goHomeAndOpenAccount();
     } catch (err) {
