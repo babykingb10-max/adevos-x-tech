@@ -1,16 +1,19 @@
 import { useState } from "react";
 import api from "../../api/client";
 import GoogleSignInButton from "../../components/ui/GoogleSignInButton";
+import { useAuth } from "../../context/AuthContext";
 
 export default function AdminLogin({ onSuccess }) {
   const [form, setForm] = useState({ username: "", password: "" });
   const [error, setError] = useState("");
+  const { loginWithToken } = useAuth();
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
     try {
-      await api.post("/auth/admin/login", form);
+      const { data } = await api.post("/auth/admin/login", form);
+      loginWithToken(data.token);
       onSuccess();
     } catch (err) {
       setError(err.response?.data?.message || "Login failed");
@@ -20,7 +23,8 @@ export default function AdminLogin({ onSuccess }) {
   async function handleGoogleCredential(idToken) {
     setError("");
     try {
-      await api.post("/auth/admin/google", { idToken });
+      const { data } = await api.post("/auth/admin/google", { idToken });
+      loginWithToken(data.token);
       onSuccess();
     } catch (err) {
       setError(err.response?.data?.message || "Admin Google sign-in failed");
